@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-11-18
+
 ### Changed（项目画像 Agent Native 化）
 - **删除手工哨兵词表，改为模型提取画像**：原 `profile.rs` 的 6 族框架词表需要随
   框架迭代持续维护、且永远滞后于新框架。现在 `fiora profile`（`run` 自动跑）
