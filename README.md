@@ -41,9 +41,23 @@ init 自动拉取其余运行时（pi + OpenGrep，后者带 SHA-256 校验）�
 
 ### ① 首选：交给工作台 Agent 跑
 
-**没配置好就把 [docs/SETUP.md](docs/SETUP.md) 的配置 prompt 交给 Agent**：从装
-二进制到配模型一把到位（幂等，已装则跳过，不会重复下载）。配好后把
-[SKILL.md](SKILL.md) 交给它，说一句「审计这个仓库」，其余它自己完成：
+复制这一句话给你的 coding agent（pi 等），它自己读文档执行，**无需手动下载
+任何文件**：
+
+- 一次性配置：
+
+  ```
+  阅读并执行 https://raw.githubusercontent.com/Ryze-T/fiora/main/docs/SETUP.md，把 fiora 配置到可用状态。
+  ```
+
+- 每次审计：
+
+  ```
+  阅读并执行 https://raw.githubusercontent.com/Ryze-T/fiora/main/SKILL.md，审计 <仓库路径>。
+  ```
+
+配置幂等（已装则跳过，不会重复下载）；审计由 SKILL.md 的调用章 + 验证章契约
+兜底，Agent 自己走完闭环：
 
 ```
 fiora init → fiora run（扫描 + 判定 + 报告）
@@ -52,7 +66,7 @@ fiora init → fiora run（扫描 + 判定 + 报告）
 → 交付报告 + 验证徽章 + 验证终表
 ```
 
-SKILL.md 双章（调用章 + 验证章）是给 Agent 的行为契约。
+网络受限拉不到 URL 时，把对应文档内容粘贴给 Agent 同样有效。
 
 ### ② 或者：手动安装 + 纯 CLI（无 Agent）
 

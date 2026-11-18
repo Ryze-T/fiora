@@ -1,7 +1,10 @@
-# 系统配置 Prompt（交给 Agent 执行）
+# 系统配置（交给 Agent 执行）
 
-把下面整段 prompt 丢给你的 coding agent（pi 等），它会把 fiora 配置到可用状态。
-fiora 审计阶段的行为契约见 [SKILL.md](../SKILL.md)。
+给你的 coding agent（pi 等）一句话即可，它会读取本文件并执行：
+
+> 阅读并执行 https://raw.githubusercontent.com/Ryze-T/fiora/main/docs/SETUP.md，把 fiora 配置到可用状态。
+
+（也可以把本文内容直接粘给 Agent。）审计阶段的行为契约见 [SKILL.md](../SKILL.md)。
 
 ---
 
