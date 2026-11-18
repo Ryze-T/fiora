@@ -51,6 +51,7 @@ fiora init → fiora run（扫描 + 判定 + 报告）
 
 SKILL.md 双章（调用章 + 验证章）是给 Agent 的行为契约：怎么调、怎么验、
 验证纪律（canary 无害化 / 正控往返 / 即用即毁 / 不夸大）都在里面。
+系统还没装好？把 [docs/SETUP.md](docs/SETUP.md) 的配置 prompt 交给 Agent 先装好。
 
 ### ③ 或者：纯 CLI（无 Agent）
 
