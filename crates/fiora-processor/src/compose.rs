@@ -80,7 +80,7 @@ pub fn build_inventory(findings: &[Finding], leads: &[String]) -> Vec<Observatio
 }
 
 /// 组合狩猎提示词：清单 + 威胁画像 → 组合假设（含待击破的保证）。
-pub fn compose_prompt(inv: &[Observation], tech: &[String]) -> String {
+pub fn compose_prompt(inv: &[Observation], tech: &[String], hunt_memo: Option<&str>) -> String {
     let table = inv
         .iter()
         .map(|o| {
@@ -132,7 +132,7 @@ Output STRICT JSON only:{{"compositions":[
 Rules: chains must reference observation ids from the list; prefer chains that
 break a stated safety assumption; 1-8 compositions; quality over quantity —
 a composition whose parts do not actually connect is noise."#,
-        highlights = crate::prompts::tech_highlights(tech),
+        highlights = crate::prompts::with_memo(crate::prompts::tech_highlights(tech), hunt_memo),
         table = table,
     )
 }

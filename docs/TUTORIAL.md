@@ -44,6 +44,10 @@ fiora run                      # 全流水线；大仓库加 --workers 4
 
 进度：`fiora status` 随时看账本（文件/发现/链计数）。中断就重跑同命令，断点续跑。
 
+run 开头会自动跑一次**项目画像**（模型读仓库，提取狩猎重点注入后续判定），
+落 `.fiora/profile.json`，可 `fiora profile --refresh` 重提；想跳过 AI 阶段用
+`fiora run --no-ai`（画像也一并跳过）。
+
 ## 4. 读报告
 
 打开 `fiora-report/report.html`（单文件、离线、可转发）：

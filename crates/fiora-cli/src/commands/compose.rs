@@ -42,7 +42,7 @@ pub(crate) fn cmd_compose(
 
     // 2) 组合会话：观察清单 → 组合假设
     let req = PiRequest {
-        prompt: compose_prompt(&inv, &tech),
+        prompt: compose_prompt(&inv, &tech, crate::support::hunt_memo(&base).as_deref()),
         model: model.clone(),
         thinking: Some(thinking),
         name: Some("fiora-composition".to_string()),

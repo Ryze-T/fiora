@@ -116,7 +116,7 @@ fiora run [--root <DIR>] [--model <ID>] [--thinking <LEVEL>] [--workers <N>] [--
 | `--workers` | `1` | 并行判定 worker 数（批次级并行，经 TTL 租约认领） |
 | `--no-ai` | 关 | 只跑免费阶段（scan + evidence + report），不调模型；交付零模型报告，provenance 会写明未判定 |
 | `--severity` | `high` | 书写阀（不是判定阀）：high=仅高危及以上写全契约（impact/PoC/前置），中低危只留最小字段省 token；**每条候选都会拿到判定结论**，报告展示范围跟随此参数 |
-| `--explore <N>` | auto | 语义探索会话预算（此前自动跑项目画像，见 `fiora profile`）：auto=按未覆盖文件全量覆盖（大仓库会是数百上千个模型会话，启动时会先报数）；`--explore 0` 跳过探索只走规则通道 |
+| `--explore <N>` | auto | 语义探索会话预算（run 在探索前先自动跑项目画像，见 `fiora profile`）：auto=按未覆盖文件全量覆盖（大仓库会是数百上千个模型会话，启动时会先报数）；`--explore 0` 跳过探索只走规则通道 |
 
 ### `fiora scan` — L1 规则通道
 

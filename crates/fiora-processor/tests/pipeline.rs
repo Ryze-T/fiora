@@ -629,7 +629,7 @@ fn composition_inventory_carries_safety_assumptions() {
         "FP 否决理由=安全假设必入清单"
     );
     assert!(inv[0].safety.contains("[有守卫]"), "rebuttal 标记聚合");
-    let p = compose_prompt(&inv, &[]);
+    let p = compose_prompt(&inv, &[], None);
     assert!(p.contains("ASSUMPTION BREAK"), "组合模式词表在场");
     assert!(p.contains("controller 键无属主校验"), "线索入清单");
     // 解析兼容
