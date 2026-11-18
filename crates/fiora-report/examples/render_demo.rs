@@ -194,7 +194,7 @@ fn main() {
     let html = render_html(&d);
     let out = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| "demo-report.html".into());
+        .unwrap_or_else(|| "docs/demo-report.html".into());
     std::fs::write(&out, html).expect("write demo report");
     println!("demo report -> {out}");
 }
