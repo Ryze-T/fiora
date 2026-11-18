@@ -67,7 +67,20 @@ rm -rf /tmp/fiora-smoke                 # 即用即毁
 真实仓库只做第 3 步的 `fiora init`（配置落位，不随仓库体量变慢）；
 全量扫描属于审计阶段（`fiora run` / SKILL.md），不是装机验收的一部分。
 
-**6. 交付配置终表**：组件（fiora / node / pi / opengrep / 规则条数 / 模型 /
+**6. 安装 fiora 审计 skill**（一次性，让「审计 xxx」直接触发）：
+把 SKILL.md 装进你所在 Agent 的 skills 机制，例如 pi：
+
+```bash
+mkdir -p ~/.pi/agent/skills/fiora
+curl -fsSL https://raw.githubusercontent.com/Ryze-T/fiora/main/SKILL.md \
+  -o ~/.pi/agent/skills/fiora/SKILL.md
+```
+
+其他 Agent 按其各自的 skill 注册方式放置；没有 skills 目录机制的，
+把 SKILL.md 放进工作区并在系统提示里引用。验收：对 Agent 说「审计」能唤起
+fiora 流程（或它能列出 fiora skill）。
+
+**7. 交付配置终表**：组件（fiora / node / pi / opengrep / 规则条数 / 模型 /
 docker 能力项）× 版本路径状态，附 `fiora doctor` 原文，以及下一步指引：
 接着要审计就按 [SKILL.md](../SKILL.md) 干活；纯 CLI 走 [USAGE](USAGE.md)。
 

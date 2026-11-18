@@ -5,8 +5,9 @@ description: 证据挂载式 AI 代码审计插件（Agent 工作台背后的引
 
 # Fiora：Agent 工作台背后的代码审计插件
 
-> 入口（给用户复制的一句话）：「阅读并执行 https://raw.githubusercontent.com/Ryze-T/fiora/main/SKILL.md，审计 <仓库路径>」。
-> 系统还没配置好？先跑 [docs/SETUP.md](docs/SETUP.md)（同样一句话，见其开头）。
+> 本文件应常驻 Agent 的 skills 目录（由 [docs/SETUP.md](docs/SETUP.md) 安装），之后用户
+> 只要说「审计 <仓库>」即由触发词接管。skill 未安装时可现场拉取执行：
+> 「阅读并执行 https://raw.githubusercontent.com/Ryze-T/fiora/main/SKILL.md，审计 <仓库路径>」。
 
 **产品定位**：fiora 是插件引擎，不是独立验证器。
 

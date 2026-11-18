@@ -41,23 +41,20 @@ init 自动拉取其余运行时（pi + OpenGrep，后者带 SHA-256 校验）�
 
 ### ① 首选：交给工作台 Agent 跑
 
-复制这一句话给你的 coding agent（pi 等），它自己读文档执行，**无需手动下载
-任何文件**：
+**一次性**，复制这句话给你的 coding agent（pi 等），配置 + 安装 fiora 审计
+skill 一把到位（幂等，已装则跳过）：
 
-- 一次性配置：
+```
+阅读并执行 https://raw.githubusercontent.com/Ryze-T/fiora/main/docs/SETUP.md，把 fiora 配置到可用状态。
+```
 
-  ```
-  阅读并执行 https://raw.githubusercontent.com/Ryze-T/fiora/main/docs/SETUP.md，把 fiora 配置到可用状态。
-  ```
+**之后每次审计，直接说**（skill 已常驻 Agent 的 skills 目录，触发词自动接管）：
 
-- 每次审计：
+```
+审计 <仓库路径>
+```
 
-  ```
-  阅读并执行 https://raw.githubusercontent.com/Ryze-T/fiora/main/SKILL.md，审计 <仓库路径>。
-  ```
-
-配置幂等（已装则跳过，不会重复下载）；审计由 SKILL.md 的调用章 + 验证章契约
-兜底，Agent 自己走完闭环：
+审计由 SKILL.md 的调用章 + 验证章契约兜底，Agent 自己走完闭环：
 
 ```
 fiora init → fiora run（扫描 + 判定 + 报告）
@@ -66,7 +63,9 @@ fiora init → fiora run（扫描 + 判定 + 报告）
 → 交付报告 + 验证徽章 + 验证终表
 ```
 
-网络受限拉不到 URL 时，把对应文档内容粘贴给 Agent 同样有效。
+换了机器 / skill 没装时，直接让它现读也行：
+`阅读并执行 https://raw.githubusercontent.com/Ryze-T/fiora/main/SKILL.md，审计 <仓库路径>`；
+网络受限则把对应文档内容粘给 Agent。
 
 ### ② 或者：手动安装 + 纯 CLI（无 Agent）
 
