@@ -50,6 +50,8 @@ open fiora-report/report.html
 
 ## 报告长什么样
 
+完整示例（单文件 HTML，离线可开）：[docs/demo-report.html](docs/demo-report.html)
+
 暗色主题 · 左侧目录 · 自动统计仪表盘 · mermaid 攻击链 · 发现↔PoC 双向跳转 · 一键复制复现包 · 验证徽章三级：
 
 ```

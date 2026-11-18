@@ -1,3 +1,7 @@
-* text=auto eol=lf
-*.png binary
-*.wasm binary
+# 生成产物 / 测试语料 / vendored 资产不计入语言统计：
+# 否则 3.4MB 的示例报告 HTML 会把 Rust 源码淹成 16%。
+docs/demo-report.html linguist-generated
+corpus/** linguist-vendored
+crates/fiora-cli/assets/** linguist-vendored
+crates/fiora-report/src/vendor/** linguist-vendored
+assets/** linguist-generated
