@@ -1,0 +1,10 @@
+{
+  "name": "sqli-java-sprintf",
+  "description": "Java SQLi: concatenated Statement (CVE-2021-44228 \u751f\u6001\u5e38\u89c1)",
+  "expected": [
+    {
+      "file": "UserDao.java",
+      "category": "sqli"
+    }
+  ]
+}

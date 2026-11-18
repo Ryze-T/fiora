@@ -1,0 +1,356 @@
+rules:
+# ============ 污点规则包（taint-floor，层 1）============
+# 语义：跨赋值/中转变量的 source→sink 传播（opengrep mode: taint）。
+# 已知边界（实测）：函数内传播 ✓ / 跨函数 ✗——跨函数由层 2 调用链引擎补。
+# 元数据 category 沿用判定词表，与 pattern 规则同槽归一。
+
+# ---------- Go ----------
+- id: taint-go-cmdi
+  languages: [go]
+  message: "污点流：用户输入经中转变量流入命令执行（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.URL.Query().Get(...)
+    - pattern: $R.FormValue(...)
+    - pattern: $R.PathValue(...)
+    - pattern: $R.PostFormValue(...)
+    - pattern: os.Getenv(...)
+    - pattern: os.Args[...]
+  pattern-sinks:
+    - pattern: exec.Command(...)
+    - pattern: exec.CommandContext(...)
+    - pattern: $C.Run()
+    - pattern: $C.Start()
+  pattern-sanitizers:
+    - pattern: strconv.Atoi(...)
+    - pattern: strconv.ParseInt(...)
+    - pattern: strconv.ParseFloat(...)
+    - pattern: strconv.ParseBool(...)
+  metadata:
+    category: cmdi
+    note: "sanitizer=参数化/类型转换阻断；未净化直连即候选"
+
+- id: taint-go-sqli
+  languages: [go]
+  message: "污点流：用户输入经中转变量流入 SQL 执行（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.URL.Query().Get(...)
+    - pattern: $R.FormValue(...)
+    - pattern: $R.PostFormValue(...)
+  pattern-sinks:
+    - pattern: $DB.Query($Q, ...)
+    - pattern: $DB.Exec($Q, ...)
+    - pattern: $DB.QueryRow($Q, ...)
+    - pattern: $ST.Query($Q, ...)
+    - pattern: $ST.Exec($Q, ...)
+  pattern-sanitizers:
+    - pattern: strconv.Atoi(...)
+    - pattern: strconv.ParseInt(...)
+  metadata:
+    category: sqli
+
+- id: taint-go-pathtraversal
+  languages: [go]
+  message: "污点流：用户输入经中转变量流入文件路径 API（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.URL.Query().Get(...)
+    - pattern: $R.FormValue(...)
+    - pattern: $R.PathValue(...)
+  pattern-sinks:
+    - pattern: os.Open(...)
+    - pattern: os.ReadFile(...)
+    - pattern: os.WriteFile(...)
+    - pattern: os.Remove(...)
+    - pattern: ioutil.ReadFile(...)
+    - pattern: ioutil.WriteFile(...)
+    - pattern: $H.ServeFile(...)
+  pattern-sanitizers:
+    - pattern: filepath.Base(...)
+    - pattern: filepath.Clean(...)
+    - pattern: path.Clean(...)
+  metadata:
+    category: path-traversal
+
+- id: taint-go-ssrf
+  languages: [go]
+  message: "污点流：用户输入经中转变量流入 HTTP 客户端（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.URL.Query().Get(...)
+    - pattern: $R.FormValue(...)
+  pattern-sinks:
+    - pattern: http.Get(...)
+    - pattern: http.Post(...)
+    - pattern: http.Head(...)
+    - pattern: http.NewRequest(..., $X, ...)
+  metadata:
+    category: ssrf
+
+# ---------- Python ----------
+- id: taint-py-cmdi
+  languages: [python]
+  message: "污点流：用户输入经中转变量流入命令执行（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.args.get(...)
+    - pattern: $R.form.get(...)
+    - pattern: $R.values.get(...)
+    - pattern: $R.json.get(...)
+    - pattern: request.args.get(...)
+    - pattern: request.form.get(...)
+    - pattern: os.environ.get(...)
+    - pattern: sys.argv[...]
+    - pattern: input(...)
+  pattern-sinks:
+    - pattern: os.system(...)
+    - pattern: os.popen(...)
+    - pattern: subprocess.run(...)
+    - pattern: subprocess.call(...)
+    - pattern: subprocess.Popen(...)
+    - pattern: os.execv(...)
+    - pattern: os.execve(...)
+  pattern-sanitizers:
+    - pattern: int(...)
+    - pattern: float(...)
+    - pattern: shlex.quote(...)
+  metadata:
+    category: cmdi
+
+- id: taint-py-sqli
+  languages: [python]
+  message: "污点流：用户输入经中转变量流入 SQL 执行（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.args.get(...)
+    - pattern: $R.form.get(...)
+    - pattern: request.args.get(...)
+    - pattern: request.form.get(...)
+  pattern-sinks:
+    - pattern: $C.execute($Q, ...)
+    - pattern: $C.executemany($Q, ...)
+    - pattern: $C.executescript($Q, ...)
+  pattern-sanitizers:
+    - pattern: int(...)
+    - pattern: float(...)
+  metadata:
+    category: sqli
+
+- id: taint-py-pathtraversal
+  languages: [python]
+  message: "污点流：用户输入经中转变量流入文件路径 API（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.args.get(...)
+    - pattern: $R.form.get(...)
+    - pattern: request.args.get(...)
+    - pattern: request.form.get(...)
+  pattern-sinks:
+    - pattern: open(...)
+    - pattern: os.remove(...)
+    - pattern: os.rename(...)
+    - pattern: send_file(...)
+    - pattern: send_from_directory(...)
+    - pattern: shutil.copy(...)
+  pattern-sanitizers:
+    - pattern: os.path.basename(...)
+    - pattern: pathlib.Path(...).name
+  metadata:
+    category: path-traversal
+
+- id: taint-py-deser
+  languages: [python]
+  message: "污点流：用户输入经中转变量流入反序列化（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.get_data(...)
+    - pattern: $R.data
+    - pattern: $R.args.get(...)
+    - pattern: request.get_data(...)
+  pattern-sinks:
+    - pattern: pickle.loads(...)
+    - pattern: pickle.load(...)
+    - pattern: marshal.loads(...)
+    - pattern: yaml.load(...)
+  metadata:
+    category: deser
+
+- id: taint-py-ssti
+  languages: [python]
+  message: "污点流：用户输入经中转变量流入模板渲染（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.args.get(...)
+    - pattern: $R.form.get(...)
+    - pattern: request.args.get(...)
+    - pattern: request.form.get(...)
+  pattern-sinks:
+    - pattern: render_template_string(...)
+    - pattern: jinja2.Template(...)
+    - pattern: mako.template.Template(...)
+  metadata:
+    category: ssti
+
+# ---------- Java / Kotlin ----------
+- id: taint-java-cmdi
+  languages: [java, kotlin]
+  message: "污点流：用户输入经中转变量流入命令执行（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.getParameter(...)
+    - pattern: $R.getHeader(...)
+    - pattern: $R.getQueryString()
+    - pattern: System.getenv(...)
+  pattern-sinks:
+    - pattern: Runtime.getRuntime().exec(...)
+    - pattern: $B.start()
+    - pattern: new ProcessBuilder(...)
+  pattern-sanitizers:
+    - pattern: Integer.parseInt(...)
+    - pattern: Long.parseLong(...)
+  metadata:
+    category: cmdi
+
+- id: taint-java-sqli
+  languages: [java, kotlin]
+  message: "污点流：用户输入经中转变量流入 SQL 执行（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.getParameter(...)
+    - pattern: $R.getHeader(...)
+  pattern-sinks:
+    - pattern: $S.executeQuery($Q, ...)
+    - pattern: $S.executeUpdate($Q, ...)
+    - pattern: $S.execute($Q, ...)
+    - pattern: $S.addBatch($Q, ...)
+  pattern-sanitizers:
+    - pattern: Integer.parseInt(...)
+    - pattern: Long.parseLong(...)
+  metadata:
+    category: sqli
+
+- id: taint-java-pathtraversal
+  languages: [java, kotlin]
+  message: "污点流：用户输入经中转变量流入文件 API（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.getParameter(...)
+    - pattern: $R.getHeader(...)
+  pattern-sinks:
+    - pattern: new File(...)
+    - pattern: new FileInputStream(...)
+    - pattern: new FileOutputStream(...)
+    - pattern: Files.readAllBytes(...)
+    - pattern: Files.write(...)
+  pattern-sanitizers:
+    - pattern: FilenameUtils.getName(...)
+  metadata:
+    category: path-traversal
+
+- id: taint-java-expr
+  languages: [java, kotlin]
+  message: "污点流：用户输入经中转变量流入表达式引擎（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: $R.getParameter(...)
+    - pattern: $R.getHeader(...)
+  pattern-sinks:
+    - pattern: new SpelExpressionParser().parseExpression(...)
+    - pattern: $P.parseExpression(...)
+    - pattern: $E.eval(...)
+    - pattern: Ognl.getValue(...)
+  metadata:
+    category: expr-injection
+
+# ---------- JS / TS ----------
+- id: taint-js-cmdi
+  languages: [javascript, typescript]
+  message: "污点流：用户输入经中转变量流入命令执行（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: req.query[...]
+    - pattern: req.body[...]
+    - pattern: req.params[...]
+    - pattern: request.query[...]
+    - pattern: request.body[...]
+    - pattern: process.env[...]
+    - pattern: process.argv[...]
+  pattern-sinks:
+    - pattern: child_process.exec(...)
+    - pattern: child_process.execSync(...)
+    - pattern: child_process.spawn(...)
+    - pattern: exec(...)
+    - pattern: execSync(...)
+  pattern-sanitizers:
+    - pattern: parseInt(...)
+    - pattern: Number(...)
+  metadata:
+    category: cmdi
+
+- id: taint-js-eval
+  languages: [javascript, typescript]
+  message: "污点流：用户输入经中转变量流入 eval/动态代码（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: req.query[...]
+    - pattern: req.body[...]
+    - pattern: req.params[...]
+  pattern-sinks:
+    - pattern: eval(...)
+    - pattern: new Function(...)
+    - pattern: setTimeout(...)
+  metadata:
+    category: rce
+
+- id: taint-js-pathtraversal
+  languages: [javascript, typescript]
+  message: "污点流：用户输入经中转变量流入文件 API（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: req.query[...]
+    - pattern: req.body[...]
+    - pattern: req.params[...]
+  pattern-sinks:
+    - pattern: fs.readFileSync(...)
+    - pattern: fs.readFile(...)
+    - pattern: fs.writeFile(...)
+    - pattern: res.sendFile(...)
+  pattern-sanitizers:
+    - pattern: path.basename(...)
+  metadata:
+    category: path-traversal
+
+- id: taint-js-ssti
+  languages: [javascript, typescript]
+  message: "污点流：用户输入经中转变量流入模板渲染（函数内链路）"
+  severity: ERROR
+  mode: taint
+  pattern-sources:
+    - pattern: req.query[...]
+    - pattern: req.body[...]
+    - pattern: req.params[...]
+  pattern-sinks:
+    - pattern: ejs.render(...)
+    - pattern: ejs.compile(...)
+    - pattern: pug.render(...)
+    - pattern: handlebars.compile(...)
+    - pattern: nunjucks.renderString(...)
+  metadata:
+    category: ssti

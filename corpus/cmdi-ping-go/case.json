@@ -1,0 +1,10 @@
+{
+  "name": "cmdi-ping-go",
+  "description": "Go cmd injection: user input to exec.Command (CVE-2021-43798 \u7c7b)",
+  "expected": [
+    {
+      "file": "main.go",
+      "category": "cmdi"
+    }
+  ]
+}

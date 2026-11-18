@@ -1,0 +1,43 @@
+rules:
+# ============ 任意命令执行 ============
+- id: cmdi-go-exec
+  languages: [go]
+  message: "任意命令执行候选：exec.Command"
+  severity: ERROR
+  pattern-either:
+    - pattern: exec.Command($X, ...)
+    - pattern: exec.CommandContext($CTX, $X, ...)
+    - pattern: exec.Command("bash", "-c", $X)
+    - pattern: exec.Command("sh", "-c", $X)
+
+- id: cmdi-python-shell
+  languages: [python]
+  message: "任意命令执行候选：subprocess/os.system"
+  severity: ERROR
+  pattern-either:
+    - pattern: os.system($X)
+    - pattern: os.popen($X)
+    - pattern: subprocess.run($X, ..., shell=True)
+    - pattern: subprocess.Popen($X, ..., shell=True)
+    - pattern: subprocess.check_output($X, ..., shell=True)
+    - pattern: subprocess.run([$A, $X], ...)
+    - pattern: subprocess.Popen([$A, $X], ...)
+
+- id: cmdi-java-exec
+  languages: [java]
+  message: "任意命令执行候选：Runtime.exec / ProcessBuilder"
+  severity: ERROR
+  pattern-either:
+    - pattern: Runtime.getRuntime().exec($X)
+    - pattern: new ProcessBuilder($X, ...)
+    - pattern: new ProcessBuilder($LIST)
+
+- id: cmdi-js-exec
+  languages: [typescript, javascript]
+  message: "任意命令执行候选：child_process"
+  severity: ERROR
+  pattern-either:
+    - pattern: child_process.exec($X)
+    - pattern: exec($X)
+    - pattern: execSync($X)
+    - pattern: spawn($CMD, $X, ...)

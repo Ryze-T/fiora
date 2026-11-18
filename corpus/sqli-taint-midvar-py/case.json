@@ -1,0 +1,7 @@
+{
+  "name": "sqli-taint-midvar-py",
+  "description": "二次赋值中转的 SQL 注入（污点传播形态）",
+  "expected": [
+    {"file": "db.py", "category": "sqli", "sink_symbol": "execute"}
+  ]
+}

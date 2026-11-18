@@ -1,0 +1,7 @@
+# 一次性实验室镜像——依赖按目标栈增删，保持最小
+FROM python:3.11-slim
+WORKDIR /app
+# 按需装轻依赖；重依赖（torch 等）用 stub_loader 桩化
+RUN pip install --no-cache-dir msgspec
+COPY lab.py stub_loader.py /app/
+# 真实源码以只读挂载进 /work：docker run -v <repo>:/work:ro

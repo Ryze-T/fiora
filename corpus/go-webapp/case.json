@@ -1,0 +1,20 @@
+{
+    "name": "go-webapp",
+    "description": "Go/gin 服务：SQL 拼接 + SSRF + 硬编码凭据（路由接线，入口可达）",
+    "expected": [
+        {
+            "file": "api/vuln.go",
+            "category": "sqli",
+            "sink_symbol": "db.Query"
+        },
+        {
+            "file": "api/proxy.go",
+            "category": "ssrf",
+            "sink_symbol": "http.Get"
+        },
+        {
+            "file": "config/load.go",
+            "category": "secrets-exposure"
+        }
+    ]
+}

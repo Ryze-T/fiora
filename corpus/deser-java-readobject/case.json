@@ -1,0 +1,10 @@
+{
+  "name": "deser-java-readobject",
+  "description": "Java deserialization: ObjectInputStream on user data (CVE-2023-21930 \u7c7b)",
+  "expected": [
+    {
+      "file": "State.java",
+      "category": "deser"
+    }
+  ]
+}

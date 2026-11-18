@@ -1,0 +1,10 @@
+{
+  "name": "idor-go-object",
+  "description": "Go IDOR: request id to Get without ownership check (CVE-2023-2618 \u7c7b)",
+  "expected": [
+    {
+      "file": "orders.go",
+      "category": "idor"
+    }
+  ]
+}

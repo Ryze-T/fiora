@@ -1,0 +1,14 @@
+[package]
+name = "fiora-report"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Fiora report: single-file HTML audit report (layout A, narrative)"
+
+[dependencies]
+fiora-core = { path = "../fiora-core" }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

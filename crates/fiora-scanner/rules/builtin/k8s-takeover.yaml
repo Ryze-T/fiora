@@ -1,0 +1,145 @@
+rules:
+# ============ K8s 接管/提权面（k8s-takeover）============
+# 适用：多集群/联邦/Operator 类控制面项目（kubeadmiral、karmada、clusternet…）
+# 覆盖：shell 提权、容器接管、凭据接管、集群冒充
+
+# 1) 集群冒充/SSRF：CRD 用户可控的 APIEndpoint 直达 client 构造
+- id: k8s-endpoint-user-controlled
+  languages: [go]
+  message: "用户可控的集群 APIEndpoint 直达 clientcmd/BuildConfigFromFlags——需核 RBAC 是否限制 FederatedCluster 创建与 endpoint 白名单"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            $E := $CLUSTER.Spec.APIEndpoint
+            ...
+            clientcmd.BuildConfigFromFlags($E, ...)
+        - pattern: |
+            clientcmd.BuildConfigFromFlags($CLUSTER.Spec.APIEndpoint, ...)
+        - pattern: |
+            $E = $CLUSTER.Spec.APIEndpoint
+            ...
+            $CFG.Host = $E
+  metadata:
+    category: k8s-takeover
+    note: "集群冒充/SSRF：凭据指向攻击者端点可截获管理流量"
+
+# 2) 凭据接管：Secret → 集群凭据（kubeconfig/证书）消费
+- id: k8s-secret-to-cluster-cred
+  languages: [go]
+  message: "Secret 数据用作集群凭据（kubeconfig/证书/token）——需核 Secret 读取 RBAC 与凭据最小作用域"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            $S, $ERR := $C.CoreV1().Secrets($NS).Get(...)
+            ...
+            $DATA := $S.Data[...]
+        - pattern: |
+            $S, _ := $C.CoreV1().Secrets($NS).Get(...)
+            ...
+            clientcmd.RESTConfigFromKubeConfig($S.Data[...])
+        - pattern: |
+            $S.Data["ca.crt"]
+        - pattern: |
+            $S.Data["token"]
+        - pattern: |
+            $S.Data["kubeconfig"]
+  metadata:
+    category: k8s-takeover
+    note: "凭据接管：控制面 Secret 是多集群信任根，泄露=接管成员集群"
+
+# 3) 容器接管：特权工作负载传播（privileged/hostPath/hostPID）
+- id: k8s-privileged-workload
+  languages: [go]
+  message: "工作负载模板含特权能力（Privileged/hostPath/HostPID/HostNetwork）——若模板来源可被低权用户影响即容器接管"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            Privileged: true
+        - pattern: |
+            HostPath: $X
+        - pattern: |
+            HostNetwork: true
+        - pattern: |
+            HostPID: true
+        - pattern: |
+            HostIPC: true
+  metadata:
+    category: k8s-takeover
+    note: "容器接管面：特权字段直达 kubelet，逃逸前提"
+
+# 4) shell 提权：pod exec / remotecommand 能力
+- id: k8s-remotecommand-exec
+  languages: [go]
+  message: "remotecommand/exec 能力——pod 内 shell 执行面，需核调用链 RBAC 与目标选择是否用户可控"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            remotecommand.NewSPDYExecutor(...)
+        - pattern: |
+            remotecommand.NewWebSocketExecutor(...)
+        - pattern: |
+            $C.CoreV1().Pods($NS).Exec(...)
+        - pattern: |
+            $C.CoreV1().Pods($NS).Attach(...)
+  metadata:
+    category: k8s-takeover
+    note: "shell 提权面：exec=容器内 shell，目标可控即接管"
+
+# 5) 凭据外泄：kubeconfig/证书 写入可读面（日志/事件/CRD status）
+- id: k8s-cred-to-output
+  languages: [go]
+  message: "凭据类数据流向日志/事件/输出面——凭据外泄风险"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            klog.$L(..., $S.Data[...], ...)
+        - pattern: |
+            fmt.$F(..., $S.Data["kubeconfig"], ...)
+        - pattern: |
+            $OUT = append($OUT, $S.Data[...])
+        - pattern: |
+            $STATUS.Kubeconfig = $X
+  metadata:
+    category: k8s-takeover
+    note: "凭据外泄：凭据进日志/status 即扩散信任根"
+
+# 6) webhook 信任：admission 内容未鉴权直接消费 / TLS 校验缺失
+- id: k8s-webhook-unverified-admission
+  languages: [go]
+  message: "admission webhook 直接消费请求内容且未见鉴权/来源校验——核 TLS 校验、CA 注入与 failurePolicy"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            $R := $REQ.AdmissionRequest
+            ...
+            $X := $R.Object
+        - pattern: |
+            admissionReview.Request.Object
+        - pattern: |
+            tls.Config{ ..., InsecureSkipVerify: true, ... }
+  metadata:
+    category: k8s-takeover
+    note: "webhook 信任面：免 TLS 校验+直信 admission 内容=伪造请求"
+
+# 7) impersonation：请求字段直达身份冒充
+- id: k8s-impersonation-from-input
+  languages: [go]
+  message: "用户输入直达 impersonation 头/身份字段——核身份冒充边界"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            $H.Set("Impersonate-User", $X)
+        - pattern: |
+            $CFG.Impersonate.UserName = $X
+        - pattern: |
+            rest.ImpersonationConfig{ ..., UserName: $X, ... }
+  metadata:
+    category: k8s-takeover
+    note: "身份冒充：impersonation 可控=任意身份切换"

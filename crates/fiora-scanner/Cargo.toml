@@ -1,0 +1,17 @@
+[package]
+name = "fiora-scanner"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Fiora L1: dual-channel candidate generation (OpenGrep rules + semantic exploration)"
+
+[dependencies]
+fiora-core = { path = "../fiora-core" }
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml = "0.9"
+thiserror = "2"
+regex = "1"
+
+[dev-dependencies]
+tempfile.workspace = true

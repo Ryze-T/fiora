@@ -1,0 +1,16 @@
+[package]
+name = "fiora-processor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Fiora L3: pi-driven judgment pipeline + semantic exploration channel"
+
+[dependencies]
+fiora-core = { path = "../fiora-core" }
+fiora-evidence = { path = "../fiora-evidence" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror = "2"
+
+[dev-dependencies]
+tempfile.workspace = true

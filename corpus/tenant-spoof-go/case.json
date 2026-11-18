@@ -1,0 +1,12 @@
+{
+  "name": "tenant-spoof-go",
+  "description": "多租户越权：租户 ID 取自请求头（而非会话），跨层下传到查询——单文件规则看不见这条链",
+  "expected": [
+    {
+      "file": "handler.go",
+      "category": "tenant-isolation-bypass",
+      "sink_symbol": "store.OrdersByTenant",
+      "visible_to_rule": false
+    }
+  ]
+}

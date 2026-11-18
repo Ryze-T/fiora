@@ -1,0 +1,10 @@
+{
+  "name": "ssti-node-ejs",
+  "description": "Node SSTI: user input to ejs.render (CVE-2022-29078 \u7c7b)",
+  "expected": [
+    {
+      "file": "page.js",
+      "category": "ssti"
+    }
+  ]
+}

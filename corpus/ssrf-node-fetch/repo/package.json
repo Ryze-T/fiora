@@ -1,0 +1,13 @@
+{
+  "name": "ssrf-node-fetch",
+  "version": "1.0.0",
+  "private": true,
+  "main": "preview.js",
+  "scripts": {
+    "start": "node preview.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0"
+  }
+}

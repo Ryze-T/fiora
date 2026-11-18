@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+  <body>
+    <h1>Profile</h1>
+    <div id="profile"></div>
+    <!-- 受害页面：拿到资料后交给 view.js 渲染 -->
+    <script src="/view.js"></script>
+    <script>
+      fetch("/api/profile")
+        .then((r) => r.json())
+        .then(render);
+    </script>
+  </body>
+</html>

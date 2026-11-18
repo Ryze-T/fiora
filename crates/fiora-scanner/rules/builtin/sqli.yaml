@@ -1,0 +1,64 @@
+rules:
+# ============ SQL 注入 ============
+# 策略：非 taint 模式找 sink（覆盖广），再用 codegraph 追数据流判可控性
+
+- id: sqli-sprintf-into-where
+  languages: [go]
+  message: "SQL注入候选：fmt.Sprintf 拼接进 gorm Where/Raw/Exec/Order"
+  severity: ERROR
+  pattern-either:
+    - pattern: $DB.Where(fmt.Sprintf(...))
+    - pattern: $DB.Raw(fmt.Sprintf(...))
+    - pattern: $DB.Exec(fmt.Sprintf(...))
+    - pattern: $DB.Order(fmt.Sprintf(...))
+    - pattern: $DB.Where(fmt.Sprintf(...), ...)
+    - pattern: $DB.Raw(fmt.Sprintf(...), ...)
+  metadata:
+    category: sqli
+    note: "gorm Where(string) 接受原生 SQL"
+
+- id: sqli-string-concat-field
+  languages: [go]
+  message: "SQL注入候选：Field/条件字符串拼接进 Where"
+  severity: ERROR
+  pattern-either:
+    - pattern: $DB.Where($X + " in (?)", ...)
+    - pattern: $DB.Where($X + " like ?", ...)
+    - pattern: $DB.Where($X + " != ? ", ...)
+    - pattern: $DB.Where($X + " >= ? and " + ...)
+    - pattern: $DB.Where($X + $Y, ...)
+    - pattern: $SQL = $SQL + fmt.Sprintf(...)
+    - pattern: $SQL = $SQL + $X
+
+- id: sqli-python-format
+  languages: [python]
+  message: "SQL注入候选：字符串格式化拼 SQL"
+  severity: ERROR
+  pattern-either:
+    - pattern: $CURSOR.execute($X % ...)
+    - pattern: $CURSOR.execute(f"...")
+    - pattern: $CURSOR.execute("..." + ...)
+    - pattern: $DB.raw($X % ...)
+    - pattern: $DB.raw(f"...")
+    - pattern: $DB.execute($X % ...)
+
+- id: sqli-java-concat
+  languages: [java]
+  message: "SQL注入候选：字符串拼接 SQL"
+  severity: ERROR
+  pattern-either:
+    - pattern: $S.executeQuery($X + ...)
+    - pattern: $S.executeUpdate($X + ...)
+    - pattern: $S.execute($X + ...)
+    - pattern: $Q.where($X + ...)
+    - pattern: $Q.orderBy($X + ...)
+    - pattern: $Q.append($X + ...)
+
+- id: sqli-js-template
+  languages: [typescript, javascript]
+  message: "SQL注入候选：模板字符串拼 SQL"
+  severity: ERROR
+  pattern-either:
+    - pattern: $DB.raw(`...${$X}...`)
+    - pattern: $DB.query(`...${$X}...`)
+    - pattern: $DB.$M(`...${$X}...`)

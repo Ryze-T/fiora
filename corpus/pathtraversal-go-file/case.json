@@ -1,0 +1,10 @@
+{
+  "name": "pathtraversal-go-file",
+  "description": "Go path traversal: user path to os.Open (CVE-2021-43798 Grafana \u7c7b)",
+  "expected": [
+    {
+      "file": "static.go",
+      "category": "path-traversal"
+    }
+  ]
+}

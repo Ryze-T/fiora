@@ -1,0 +1,10 @@
+{
+  "name": "xss-py-marksafe",
+  "description": "Python XSS: mark_safe on request input (CVE-2023-30861 \u7c7b)",
+  "expected": [
+    {
+      "file": "views.py",
+      "category": "xss"
+    }
+  ]
+}

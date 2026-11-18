@@ -1,0 +1,10 @@
+{
+  "name": "cmdi-subprocess-py",
+  "description": "Python cmd injection: os.system with request param (CVE-2023-2640 \u7c7b)",
+  "expected": [
+    {
+      "file": "app.py",
+      "category": "cmdi"
+    }
+  ]
+}

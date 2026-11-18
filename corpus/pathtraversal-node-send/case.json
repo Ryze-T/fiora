@@ -1,0 +1,10 @@
+{
+  "name": "pathtraversal-node-send",
+  "description": "Node path traversal: req param to res.sendFile (CVE-2022-24891 \u7c7b)",
+  "expected": [
+    {
+      "file": "app.js",
+      "category": "path-traversal"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "authbypass-node-mw",
+  "description": "Node auth bypass: route before auth middleware (CVE-2023-28155 \u7c7b)",
+  "expected": [
+    {
+      "file": "app.js",
+      "category": "auth"
+    }
+  ]
+}

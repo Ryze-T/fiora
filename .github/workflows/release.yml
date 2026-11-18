@@ -1,0 +1,83 @@
+# 多平台二进制发布：tag 推送 → 矩阵构建（artifact 汇总）→ 统一校验和 → GitHub Release
+# （附件不进 git；SHA256SUMS 由汇总作业单点生成，避免矩阵作业同名互覆）
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            archive: fiora-macos-arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            archive: fiora-macos-x64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            archive: fiora-linux-x64
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            archive: fiora-linux-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: houseabsolute/actions-rust-cross@v1
+        with:
+          target: ${{ matrix.target }}
+          args: "--release -p fiora-cli"
+          strip: true
+
+      - name: pack
+        run: |
+          mkdir -p dist/${{ matrix.archive }}
+          cp target/${{ matrix.target }}/release/fiora dist/${{ matrix.archive }}/
+          cp README.md LICENSE NOTICE dist/${{ matrix.archive }}/
+          tar -czf dist/${{ matrix.archive }}.tar.gz -C dist ${{ matrix.archive }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive }}
+          path: dist/${{ matrix.archive }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: checksums
+        run: cd dist && shasum -a 256 *.tar.gz > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body: |
+            单二进制静态链接，解压即用（系统依赖仅 Node.js ≥22.19，pi 运行时硬性要求）。
+
+            ```bash
+            curl -fsSL https://github.com/Ryze-T/fiora/releases/latest/download/fiora-<平台>.tar.gz | tar xz
+            export PATH="$PWD/fiora-<平台>:$PATH"
+            ```
+
+            | 包 | 平台 |
+            |---|---|
+            | fiora-macos-arm64 | macOS Apple Silicon |
+            | fiora-macos-x64 | macOS Intel |
+            | fiora-linux-x64 | Linux x86_64 (musl) |
+            | fiora-linux-arm64 | Linux arm64 (musl) |
+
+            校验：`shasum -a 256 -c --ignore-missing SHA256SUMS.txt`
+          files: |
+            dist/*.tar.gz
+            dist/SHA256SUMS.txt

@@ -1,0 +1,10 @@
+{
+  "name": "ssrf-py-requests",
+  "description": "Python SSRF: request url to requests.get (CVE-2023-2732 \u7c7b)",
+  "expected": [
+    {
+      "file": "proxy.py",
+      "category": "ssrf"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "xxe-py-lxml",
+  "description": "Python XXE: lxml parse of user upload (CVE-2021-28966 \u7c7b)",
+  "expected": [
+    {
+      "file": "xmlimport.py",
+      "category": "xxe"
+    }
+  ]
+}

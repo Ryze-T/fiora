@@ -1,0 +1,10 @@
+{
+  "name": "ssrf-node-fetch",
+  "description": "Node SSRF: body url to axios (CVE-2023-28155 \u7c7b)",
+  "expected": [
+    {
+      "file": "preview.js",
+      "category": "ssrf"
+    }
+  ]
+}

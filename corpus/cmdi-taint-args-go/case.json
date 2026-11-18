@@ -1,0 +1,7 @@
+{
+  "name": "cmdi-taint-args-go",
+  "description": "参数经 Cmd.Args 字段注入执行（污点规则专属命中形态）",
+  "expected": [
+    {"file": "app.go", "category": "cmdi", "sink_symbol": "c.Run"}
+  ]
+}

@@ -1,0 +1,185 @@
+rules:
+# ============ 未鉴权 ============
+# 思路：路由注册 vs 中间件挂载 对比
+
+# Go/hertz: handler 无鉴权包装
+- id: unauth-go-handler-no-auth
+  languages: [go]
+  message: "疑似未鉴权：HTTP handler 未见鉴权包装（需人工确认中间件是否全局挂载）"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            func $F(ctx context.Context, c *app.RequestContext) {
+              ...
+            }
+        - pattern: |
+            func $F(ctx context.Context, r *api_service.HttpHandlerRequest) (*api_service.HttpHandlerResponse, error) {
+              ...
+            }
+  metadata:
+    category: unauth
+    note: "需结合 codegraph callers 确认是否经鉴权中间件"
+
+# Java: @PostMapping 无权限注解
+- id: unauth-java-no-annotation
+  languages: [java]
+  message: "疑似未鉴权：Controller 方法无 @PreAuthorize/@RequirePermission 注解"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            @$MAPPING(...)
+            public $T $M(...) { ... }
+  pattern-not-inside: |
+    @PreAuthorize(...)
+    ...
+  metadata:
+    category: unauth
+
+# Python: 路由无 login_required
+- id: unauth-python-route
+  languages: [python]
+  message: "疑似未鉴权：路由无 login_required/权限装饰器"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            @$APP.route(...)
+            def $F(...):
+              ...
+        - pattern: |
+            @$APP.get(...)
+            def $F(...):
+              ...
+        - pattern: |
+            @$APP.post(...)
+            def $F(...):
+              ...
+        - pattern: |
+            @$APP.put(...)
+            def $F(...):
+              ...
+        - pattern: |
+            @$APP.delete(...)
+            def $F(...):
+              ...
+        - pattern: |
+            @$APP.patch(...)
+            def $F(...):
+              ...
+    - pattern-not-inside: |
+        @login_required
+        def $F(...):
+          ...
+    - pattern-not-inside: |
+        @requires_auth
+        def $F(...):
+          ...
+    - pattern-not-inside: |
+        @auth
+        def $F(...):
+          ...
+
+- id: authbypass-skip-switch
+  languages: [go]
+  message: "鉴权绕过：存在 skip/bypass 鉴权开关（需确认是否请求可控）"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: |
+            if $X.GetHeader($H) == $V {
+              ...
+            }
+        - pattern: |
+            if $X.Header.Get($H) == $V {
+              ...
+            }
+    - metavariable-regex:
+        metavariable: $H
+        regex: (?i).*(skip|bypass|mock|debug).*
+  metadata:
+    category: authbypass
+
+# 通用：可选鉴权（if 非空才校验）
+- id: authbypass-optional-auth
+  languages: [go]
+  message: "鉴权绕过：鉴权逻辑在 if 内，条件不满足即跳过"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: |
+            if $X != "" {
+              ...
+              $Y.Validate(...)
+              ...
+            }
+        - pattern: |
+            if $X != nil {
+              ...
+              $Y.Validate(...)
+              ...
+            }
+  metadata:
+    category: authbypass
+    note: "典型：if req.GetJwt() != \"\" { validate } — 不传即跳过"
+
+# ============ 越权 ============
+
+# IDOR: 请求体带目标 ID，无归属校验
+- id: idor-request-id-no-check
+  languages: [go, java, python]
+  message: "疑似越权：请求体提供目标 ID，未见归属校验（需人工确认）"
+  severity: WARNING
+  mode: taint
+  pattern-sources:
+    - patterns:
+        - pattern-either:
+            - pattern: $REQ.$IDFIELD(...)
+            - pattern: $REQ.FormValue(...)
+            - pattern: $REQ.URL.Query().Get(...)
+            - pattern: request.getParameter(...)
+  pattern-sinks:
+    - pattern-either:
+        - pattern: $DB.Where("id = ?", $X)
+        - pattern: $DB.Get($X, ...)
+        - pattern: $DB.First($X, ...)
+  metadata:
+    category: idor
+    note: "需 codegraph 追是否有 owner 比对"
+
+# 身份来自请求体（可伪造）
+- id: idor-identity-from-request
+  languages: [go]
+  message: "高危：身份字段（uid/user_id/operator）取自请求体，可伪造"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: |
+            $X := $REQ.$IDFIELD(...)
+            ...
+            $Y($X)
+        - pattern: |
+            $X = $REQ.$IDFIELD
+            ...
+            $Y($X)
+        - pattern: |
+            $X = req.$IDFIELD
+            ...
+            $Y($X)
+  metavariable-regex:
+    metavariable: $IDFIELD
+    regex: (?i).*(uid|userid|user_id|operator|owner|accountid|account_id|employeeid).*
+  metadata:
+    category: idor
+    note: "对比：从 session/ctx 取身份是安全的，从请求体取是可伪造的"
+
+# 权重/控制面路由候选（A3）：验证中发现的未审计面家族——全部需鉴权审计
+- id: weight-control-surface
+  languages: [python, go, java, javascript, typescript]
+  message: "权重/控制面路由候选：update/merge/rollout 系操作需鉴权审计"
+  severity: WARNING
+  pattern-regex: (?i)(update_weights_from_(disk|tensor)|merge_lora_weights|unmerge_lora_weights|/rollout|release_memory|resume_memory)
+  metadata:
+    category: missing-auth
+    note: "模型权重热替换/合并是完整性敏感操作，无鉴权即高危"

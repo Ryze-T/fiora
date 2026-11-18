@@ -1,0 +1,10 @@
+{
+  "name": "hardcoded-key-py",
+  "description": "Hardcoded API credential (CWE-798, CVE-2022-24439 \u751f\u6001\u7c7b)",
+  "expected": [
+    {
+      "file": "config.py",
+      "category": "hardcoded"
+    }
+  ]
+}

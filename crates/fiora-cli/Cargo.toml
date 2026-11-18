@@ -1,0 +1,26 @@
+[package]
+name = "fiora-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Fiora — evidence-backed AI code audit harness"
+
+[[bin]]
+name = "fiora"
+path = "src/main.rs"
+
+[dependencies]
+fiora-core = { path = "../fiora-core" }
+fiora-scanner = { path = "../fiora-scanner" }
+fiora-evidence = { path = "../fiora-evidence" }
+fiora-report = { path = "../fiora-report" }
+fiora-verify = { path = "../fiora-verify" }
+fiora-eval = { path = "../fiora-eval" }
+fiora-processor = { path = "../fiora-processor" }
+serde.workspace = true
+serde_json.workspace = true
+clap = { version = "4", features = ["derive"] }
+sha2.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

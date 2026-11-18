@@ -1,0 +1,10 @@
+{
+  "name": "rce-eval-js",
+  "description": "Node eval RCE: user input to eval (CVE-2023-3269 \u751f\u6001\u7c7b)",
+  "expected": [
+    {
+      "file": "server.js",
+      "category": "rce"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "sqli-login-py",
+  "description": "Python SQLi: string-formatted query (CVE-2022-24894 \u7c7b)",
+  "expected": [
+    {
+      "file": "db.py",
+      "category": "sqli"
+    }
+  ]
+}

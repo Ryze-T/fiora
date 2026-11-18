@@ -1,0 +1,12 @@
+{
+  "name": "broken-access-js",
+  "description": "Express 挂载级越权：/api 未挂鉴权却暴露内部会话接口（同仓 /admin 有鉴权）。规则通道能命中「路由无中间件」这一层；挂载图与「泄漏的是真实会话」需要判定层补。",
+  "expected": [
+    {
+      "file": "routes/api.js",
+      "category": "broken-access-control",
+      "sink_symbol": "dumpSessions",
+      "visible_to_rule": true
+    }
+  ]
+}

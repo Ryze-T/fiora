@@ -1,0 +1,14 @@
+{
+  "name": "py-api",
+  "description": "Flask API\uff1a\u65e0\u9274\u6743\u8def\u7531 + \u8def\u5f84\u7a7f\u8d8a\u8bfb\u6587\u4ef6",
+  "expected": [
+    {
+      "file": "app/server.py",
+      "category": "missing-auth"
+    },
+    {
+      "file": "app/server.py",
+      "category": "path-traversal"
+    }
+  ]
+}

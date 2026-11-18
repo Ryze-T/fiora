@@ -1,0 +1,10 @@
+{
+  "name": "pathtraversal-py-send",
+  "description": "Python path traversal: request path to open() (CVE-2023-22515 \u7c7b)",
+  "expected": [
+    {
+      "file": "files.py",
+      "category": "path-traversal"
+    }
+  ]
+}

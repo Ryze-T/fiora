@@ -1,0 +1,10 @@
+{
+  "name": "xxe-java-dom",
+  "description": "Java XXE: DocumentBuilderFactory without entity hardening (CVE-2023-21930 \u7c7b)",
+  "expected": [
+    {
+      "file": "XmlImport.java",
+      "category": "xxe"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+Fiora — Evidence-backed AI code audit harness
+Copyright 2026 The Fiora Authors
+
+This product includes software developed at
+the OpenGrep project (LGPL-2.1, used as a separate binary),
+The Pi Authors (pi coding agent runtime, MIT), and
+Mermaid (https://mermaid.js.org, MIT, vendored into generated reports).

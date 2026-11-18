@@ -1,0 +1,46 @@
+rules:
+# ============ 任意代码执行 ============
+- id: rce-python-eval
+  languages: [python]
+  message: "任意代码执行候选：eval/exec/pickle/yaml.load"
+  severity: ERROR
+  pattern-either:
+    - pattern: eval($X)
+    - pattern: exec($X)
+    - pattern: pickle.loads($X)
+    - pattern: yaml.load($X)
+    - pattern: marshal.loads($X)
+    - pattern: __import__($X)
+
+- id: rce-go-template-expr
+  languages: [go]
+  message: "任意代码执行候选：模板/表达式求值"
+  severity: ERROR
+  pattern-either:
+    - pattern: template.New($N).Parse($X)
+    - pattern: $T.Execute($W, $X)
+    - pattern: $E.Evaluate($CTX, $X)
+    - pattern: $E.Eval($X)
+    - pattern: plugin.Open($X)
+    - pattern: govaluate.NewEvaluableExpression($X)
+  note: "排除 url.Parse/json.Valid/gjson.Parse 等解析类（非执行）"
+
+- id: rce-java-reflect
+  languages: [java]
+  message: "任意代码执行候选：反射/ScriptEngine/表达式"
+  severity: ERROR
+  pattern-either:
+    - pattern: Class.forName($X)
+    - pattern: $M.invoke($X, ...)
+    - pattern: $SE.eval($X)
+    - pattern: $EXP.eval($X)
+
+- id: rce-js-eval
+  languages: [typescript, javascript]
+  message: "任意代码执行候选：eval/Function/vm"
+  severity: ERROR
+  pattern-either:
+    - pattern: eval($X)
+    - pattern: new Function($X)
+    - pattern: vm.runInNewContext($X)
+    - pattern: vm.runInThisContext($X)

@@ -1,0 +1,76 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gate:
+    strategy:
+      fail-fast: false
+      matrix:
+        # 双 OS 真跑：musl 静态产物出四平台，测试矩阵至少覆盖 linux + macos
+        # （windows 官方支持面 = WSL，不在此矩阵里虚假承诺）。
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+
+      # lint 只需跑一次（ubuntu），省 macos 分钟
+      - name: fmt (0 diffs)
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo fmt --all --check
+
+      - name: clippy (0 warnings)
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: tests
+        run: cargo test --workspace
+
+      # 下限门禁前置：opengrep 用钉版本直链 + SHA-256 逐字节校验（与
+      # fiora 自举同一份钉值——CI 不搞特殊，供应链纪律一体执行）。
+      - name: install opengrep (pinned + sha256 verified)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "runner: $(uname -s) $(uname -m)"
+          case "$(uname -s)-$(uname -m)" in
+            Linux-x86_64)   OG=opengrep_linux_x86;   SHA=37e93f4da5fd04a18c5c1febbdd12f7e98dfccd4d0c9cf2593bcb25eeb462da0 ;;
+            Linux-aarch64)  OG=opengrep_linux_aarch64; SHA=6257b65423a744b704af2ff9beeb8f222c2f6925236af386b56b031d4c06d6d8 ;;
+            Darwin-x86_64)  OG=opengrep_osx_x86;     SHA=51d2f918d7aad0afc1426bb4fbf56e32fc70c3ffd5ddb78e32e7d61e51c029a2 ;;
+            Darwin-arm64)   OG=opengrep_osx_arm64;   SHA=b51b3d83f165a2e0934497b8f1b08abb1c3041ef20ef911c97e04cb39af1ad55 ;;
+            *) echo "unsupported platform $(uname -s)-$(uname -m)"; exit 1 ;;
+          esac
+          curl -fsSL "https://github.com/opengrep/opengrep/releases/download/v2.0.0/${OG}" -o /tmp/${OG}
+          echo "${SHA}  /tmp/${OG}" | sha256sum -c - 2>/dev/null || echo "${SHA}  /tmp/${OG}" | shasum -a 256 -c -
+          sudo mv /tmp/${OG} /usr/local/bin/opengrep 2>/dev/null || mv /tmp/${OG} /usr/local/bin/opengrep
+          chmod +x /usr/local/bin/opengrep
+          /usr/local/bin/opengrep --version
+
+      # 下限门禁：规则通道对基准语料 recall 必须 100%（同类工具能挖的不许漏）
+      - name: floor gate (rule-channel recall = 100%)
+        run: |
+          cargo run --release -p fiora-cli -- eval --corpus corpus --rule-only | tee /tmp/gate.log
+          grep -q "recall 100%" /tmp/gate.log
+          # 语料诚实性：标注为「规则不可见」的期望不许被规则命中（否则标注错了）
+          if grep -q "警告" /tmp/gate.log; then
+            echo "corpus label violation: a visible_to_rule=false expectation was matched by rules"
+            exit 1
+          fi
+
+  # 供应链门禁：已知 Rust 依赖漏洞必须为零（开源发布面）
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - run: cargo audit

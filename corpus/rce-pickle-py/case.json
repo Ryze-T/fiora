@@ -1,0 +1,14 @@
+{
+  "name": "rce-pickle-py",
+  "description": "Python pickle deserialization RCE (CVE-2022-40897 \u7c7b)",
+  "expected": [
+    {
+      "file": "loader.py",
+      "category": "rce"
+    },
+    {
+      "file": "loader.py",
+      "category": "deser"
+    }
+  ]
+}

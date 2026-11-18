@@ -1,0 +1,10 @@
+{
+  "name": "ssti-py-jinja",
+  "description": "Python SSTI: user input to render_template_string (CVE-2023-2618 Jinja \u7c7b)",
+  "expected": [
+    {
+      "file": "templ.py",
+      "category": "ssti"
+    }
+  ]
+}

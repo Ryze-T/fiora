@@ -1,0 +1,10 @@
+{
+    "name": "openredirect-go",
+    "description": "Go 302 Location 用户可控（net/http 净化 CRLF，真实风险是开放重定向）",
+    "expected": [
+        {
+            "file": "redir.go",
+            "category": "open-redirect"
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "loginjection-go",
+  "description": "Go log injection: user input to log format (CVE-2023-27460 \u7c7b)",
+  "expected": [
+    {
+      "file": "audit.go",
+      "category": "log-injection"
+    }
+  ]
+}

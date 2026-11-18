@@ -1,0 +1,11 @@
+#!/bin/bash
+# 剥 rustc 目标规格的 zig-unsupported 旗标 + rust 自带 crt（zig 自带 musl crt）
+args=()
+for a in "$@"; do
+  case "$a" in
+    *fix-cortex-a53*) continue ;;
+    *self-contained/crt1.o|*self-contained/crti.o|*self-contained/crtbegin.o|*self-contained/crtend.o|*self-contained/crtn.o) continue ;;
+  esac
+  args+=("$a")
+done
+exec zig cc -target aarch64-linux-musl "${args[@]}"

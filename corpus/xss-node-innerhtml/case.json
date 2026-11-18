@@ -1,0 +1,10 @@
+{
+  "name": "xss-node-innerhtml",
+  "description": "Node/DOM XSS: user input to innerHTML (CVE-2023-2618 \u7c7b)",
+  "expected": [
+    {
+      "file": "public/view.js",
+      "category": "xss"
+    }
+  ]
+}

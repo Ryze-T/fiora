@@ -1,0 +1,631 @@
+rules:
+# ============ 覆盖下限包（coverage-floor）============
+# 契约：同类静态审计工具（semgrep/opengrep/codeql 社区规则）能挖的标准漏洞面，
+# fiora 的规则通道必须全覆盖。本包补齐 builtin 六类（cmdi/rce/sqli/idor/auth/unauth）
+# 之外的标准面。每条规则守住「同类工具一定报」的下限语义。
+
+# ---------- 路径穿越 ----------
+- id: floor-pathtraversal-go
+  languages: [go]
+  message: "用户输入流入文件路径（os.Open/ReadFile/Join→Open），无净化即路径穿越"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: os.Open($X)
+        - pattern: os.ReadFile($X)
+        - pattern: os.WriteFile($X, ...)
+        - pattern: ioutil.ReadFile($X)
+        - pattern: ioutil.WriteFile($X, ...)
+        - pattern: filepath.Join($A, $B, ...)
+  metadata:
+    category: path-traversal
+    note: "需污点确认：$X 是否用户可控、是否有 Clean/Base 约束"
+
+- id: floor-pathtraversal-python
+  languages: [python]
+  message: "用户输入流入文件路径（open/os.path.join），无净化即路径穿越"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: open($X, ...)
+        - pattern: os.path.join($A, $B, ...)
+        - pattern: pathlib.Path($X)
+        - pattern: os.remove($X)
+        - pattern: os.rename($X, ...)
+        - pattern: send_file($X)
+  metadata:
+    category: path-traversal
+
+- id: floor-pathtraversal-node
+  languages: [javascript, typescript]
+  message: "用户输入流入文件系统 API（fs.readFile/sendFile/res.sendFile），路径穿越面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: fs.readFileSync($X, ...)
+        - pattern: fs.readFile($X, ...)
+        - pattern: fs.writeFile($X, ...)
+        - pattern: res.sendFile($X)
+        - pattern: path.join($A, $B, ...)
+        - pattern: path.resolve($A, $B, ...)
+  metadata:
+    category: path-traversal
+
+- id: floor-pathtraversal-java
+  languages: [java, kotlin]
+  message: "用户输入流入 java.io/nio 文件 API，路径穿越面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: new File($X)
+        - pattern: new FileInputStream($X)
+        - pattern: new FileOutputStream($X)
+        - pattern: new FileReader($X)
+        - pattern: new FileWriter($X)
+        - pattern: Paths.get($X, ...)
+        - pattern: FileSystems.getDefault().getPath($X, ...)
+  metadata:
+    category: path-traversal
+
+# ---------- SSRF ----------
+- id: floor-ssrf-go
+  languages: [go]
+  message: "用户输入直达 HTTP 客户端（http.Get/Post/Client.Do），SSRF 面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: http.Get($X)
+        - pattern: http.Post($X, ...)
+        - pattern: http.NewRequest(..., $X, ...)
+        - pattern: http.Head($X)
+  metadata:
+    category: ssrf
+
+- id: floor-ssrf-python
+  languages: [python]
+  message: "用户输入直达 HTTP 客户端（requests/urllib），SSRF 面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: requests.get($X, ...)
+        - pattern: requests.post($X, ...)
+        - pattern: requests.request($M, $X, ...)
+        - pattern: urllib.request.urlopen($X, ...)
+        - pattern: urllib3.PoolManager(...).request($M, $X, ...)
+        - pattern: httpx.get($X, ...)
+        - pattern: aiohttp.ClientSession(...).get($X, ...)
+  metadata:
+    category: ssrf
+
+- id: floor-ssrf-node
+  languages: [javascript, typescript]
+  message: "用户输入直达 HTTP 客户端（fetch/axios/request），SSRF 面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: fetch($X, ...)
+        - pattern: axios.get($X, ...)
+        - pattern: axios.post($X, ...)
+        - pattern: "axios.request({ ..., url: $X, ... })"
+        - pattern: http.get($X, ...)
+        - pattern: https.get($X, ...)
+  metadata:
+    category: ssrf
+
+- id: floor-ssrf-java
+  languages: [java, kotlin]
+  message: "用户输入直达 HTTP 客户端（URL/HttpClient/RestTemplate/OkHttp），SSRF 面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: new URL($X)
+        - pattern: new URI($X)
+        - pattern: HttpClient.newHttpClient().send(...)
+        - pattern: restTemplate.getForObject($X, ...)
+        - pattern: restTemplate.exchange($X, ...)
+        - pattern: okHttpClient.newCall(...)
+  metadata:
+    category: ssrf
+
+# ---------- 模板注入 / 表达式注入 ----------
+- id: floor-ssti-python
+  languages: [python]
+  message: "用户输入直达模板渲染（Jinja/Flask/Mako/Django），SSTI 面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: jinja2.Template($X)
+        - pattern: render_template_string($X, ...)
+        - pattern: mako.template.Template($X)
+        - pattern: django.template.Template($X)
+        - pattern: Template($X).render(...)
+  metadata:
+    category: ssti
+
+- id: floor-ssti-node
+  languages: [javascript, typescript]
+  message: "用户输入直达模板引擎（ejs/pug/handlebars/nunjucks），SSTI 面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: ejs.render($X, ...)
+        - pattern: ejs.compile($X)
+        - pattern: pug.render($X, ...)
+        - pattern: handlebars.compile($X)
+        - pattern: nunjucks.renderString($X, ...)
+        - pattern: new Function($X)
+        - pattern: eval($X)
+  metadata:
+    category: ssti
+
+- id: floor-expr-injection-java
+  languages: [java, kotlin]
+  message: "用户输入直达表达式引擎（SpEL/Ognl/MVEL/ScriptEngine），表达式注入面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: new SpelExpressionParser().parseExpression($X)
+        - pattern: Ognl.getValue($X, ...)
+        - pattern: new ScriptEngineManager().getEngineByName($N)
+        - pattern: ScriptEngine.eval($X)
+        - pattern: MVEL.eval($X)
+  metadata:
+    category: expr-injection
+
+# ---------- XXE ----------
+- id: floor-xxe-java
+  languages: [java, kotlin]
+  message: "XML 解析器未禁外部实体（DocumentBuilder/SAXParser/XMLReader），XXE 面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: DocumentBuilderFactory.newInstance()
+        - pattern: SAXParserFactory.newInstance()
+        - pattern: XMLInputFactory.newInstance()
+        - pattern: XMLReaderFactory.createXMLReader()
+        - pattern: new SAXBuilder()
+        - pattern: new Unmarshaller()
+  metadata:
+    category: xxe
+    note: "核 setFeature 禁用 external-general-entities/XXE"
+
+- id: floor-xxe-python
+  languages: [python]
+  message: "XML 解析（lxml/etree/xml.sax）未禁外部实体，XXE 面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: lxml.etree.parse($X, ...)
+        - pattern: lxml.etree.fromstring($X, ...)
+        - pattern: xml.etree.ElementTree.parse($X)
+        - pattern: xml.etree.ElementTree.fromstring($X)
+        - pattern: xml.dom.minidom.parseString($X)
+        - pattern: xml.sax.parse($X, ...)
+  metadata:
+    category: xxe
+
+# ---------- 开放重定向 ----------
+- id: floor-openredirect-node
+  languages: [javascript, typescript]
+  message: "用户输入直达重定向（res.redirect/location），开放重定向面"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: res.redirect($X)
+        - pattern: response.redirect($X)
+        - pattern: window.location = $X
+        - pattern: window.location.href = $X
+  metadata:
+    category: open-redirect
+
+- id: floor-openredirect-python
+  languages: [python]
+  message: "用户输入直达重定向（redirect/HttpResponse location），开放重定向面"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: redirect($X)
+        - pattern: HttpResponseRedirect($X)
+        - pattern: flask.redirect($X)
+        - pattern: fastapi.RedirectResponse($X)
+  metadata:
+    category: open-redirect
+
+- id: floor-openredirect-java
+  languages: [java, kotlin]
+  message: "用户输入直达重定向（sendRedirect/RedirectView），开放重定向面"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: $R.sendRedirect($X)
+        - pattern: new RedirectView($X)
+        - pattern: ResponseEntity.status(302).header("Location", $X)
+  metadata:
+    category: open-redirect
+
+# ---------- XSS ----------
+- id: floor-xss-node
+  languages: [javascript, typescript]
+  message: "用户输入直达 DOM 输出（innerHTML/document.write/insertAdjacentHTML），XSS 面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: $E.innerHTML = $X
+        - pattern: $E.outerHTML = $X
+        - pattern: document.write($X)
+        - pattern: document.writeln($X)
+        - pattern: $E.insertAdjacentHTML($P, $X)
+        - pattern: "dangerouslySetInnerHTML: { __html: $X }"
+  metadata:
+    category: xss
+
+- id: floor-xss-python
+  languages: [python]
+  message: "用户输入经 mark_safe/|safe/autoescape off 直出，XSS 面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: django.utils.safestring.mark_safe($X)
+        - pattern: flask.Markup($X)
+        - pattern: jinja2.Markup($X)
+        - pattern: Markup($X)
+  metadata:
+    category: xss
+
+# ---------- 日志注入 / 头注入 ----------
+- id: floor-loginjection-go
+  languages: [go]
+  message: "用户输入直入日志（log/klog/slog/zerolog），日志注入/CRLF 面"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: log.Printf($X, ...)
+        - pattern: log.Println($X, ...)
+        - pattern: klog.Infof($X, ...)
+        - pattern: fmt.Fprintf(os.Stderr, $X, ...)
+  metadata:
+    category: log-injection
+
+- id: floor-headerinjection-node
+  languages: [javascript, typescript]
+  message: "用户输入直入响应头（setHeader/append），头注入/CRLF 面"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: res.setHeader($K, $X)
+        - pattern: response.setHeader($K, $X)
+        - pattern: headers.append($K, $X)
+  metadata:
+    category: header-injection
+
+- id: floor-headerinjection-go
+  languages: [go]
+  message: "用户输入直入响应头（Header.Set/Add），头注入/CRLF 面"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: $H.Set($K, $X)
+        - pattern: $H.Add($K, $X)
+  metadata:
+    category: header-injection
+
+- id: floor-openredirect-go
+  languages: [go]
+  message: "用户输入直入 Location 重定向（http.Redirect/Header.Set Location），开放重定向面"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: http.Redirect($W, $R, $URL, $CODE)
+        - pattern: $W.Header().Set("Location", $X)
+  metadata:
+    category: open-redirect
+
+# ---------- LDAP / XPath 注入 ----------
+- id: floor-ldapinjection-java
+  languages: [java, kotlin]
+  message: "用户输入直入 LDAP 过滤器（DirContext.search/LdapTemplate），LDAP 注入面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: $C.search($B, $X, ...)
+        - pattern: ldapTemplate.search(..., $X, ...)
+        - pattern: new SearchControls(..., $X, ...)
+  metadata:
+    category: ldap-injection
+
+- id: floor-xpath-java
+  languages: [java, kotlin]
+  message: "用户输入直入 XPath 表达式（XPath.compile/evaluate），XPath 注入面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: $XP.compile($X)
+        - pattern: $XP.evaluate($X, ...)
+        - pattern: XPathFactory.newInstance().newXPath().compile($X)
+  metadata:
+    category: xpath-injection
+
+# ---------- 加密误用 ----------
+- id: floor-crypto-misuse
+  languages: [go, java, python, javascript, typescript]
+  message: "弱加密/硬编码密钥/弱哈希（DES/RC4/MD5/SHA1/EBCB/常量 key）"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: md5.Sum(...)
+        - pattern: sha1.Sum(...)
+        - pattern: Cipher.getInstance("DES")
+        - pattern: Cipher.getInstance("DESede")
+        - pattern: Cipher.getInstance("RC4")
+        - pattern: Cipher.getInstance("AES/ECB/...")
+        - pattern: hashlib.md5(...)
+        - pattern: hashlib.sha1(...)
+        - pattern: crypto.createHash("md5")
+        - pattern: crypto.createHash("sha1")
+  metadata:
+    category: crypto-misuse
+
+- id: floor-hardcoded-credential
+  languages: [go, java, python, javascript, typescript]
+  message: "硬编码凭据（密码/API key/私钥/token 常量）"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            password = "..."
+        - pattern: |
+            passwd = "..."
+        - pattern: |
+            api_key = "..."
+        - pattern: |
+            apiKey = "..."
+        - pattern: |
+            secret = "..."
+        - pattern: |
+            token = "..."
+        - pattern: |
+            private_key = "..."
+  metadata:
+    category: hardcoded-credential
+    note: "常量赋值=候选，需排除测试/示例/假值"
+
+# ---------- 不安全 TLS ----------
+- id: floor-tls-insecure-go
+  languages: [go]
+  message: "TLS 校验禁用（InsecureSkipVerify: true）"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: "&tls.Config{ ..., InsecureSkipVerify: true, ... }"
+        - pattern: "tls.Config{ ..., InsecureSkipVerify: true, ... }"
+  metadata:
+    category: tls-misuse
+
+- id: floor-tls-insecure-python
+  languages: [python]
+  message: "TLS 校验禁用（verify=False / unverified_context）"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: requests.$M(..., verify=False, ...)
+        - pattern: httpx.$M(..., verify=False, ...)
+        - pattern: ssl._create_unverified_context(...)
+        - pattern: ssl._create_default_https_context = ssl._create_unverified_context
+  metadata:
+    category: tls-misuse
+
+- id: floor-tls-insecure-node
+  languages: [javascript, typescript]
+  message: "TLS 校验禁用（rejectUnauthorized: false）"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: |
+            rejectUnauthorized: false
+        - pattern: |
+            checkServerIdentity: (...) => true
+  metadata:
+    category: tls-misuse
+
+# ---------- 反序列化补面 ----------
+- id: floor-deser-node
+  languages: [javascript, typescript]
+  message: "不安全反序列化（node-serialize/serialize-javascript/funcster）"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: require("node-serialize").unserialize($X)
+        - pattern: serialize.unserialize($X)
+        - pattern: funcster.deepDeserialize($X)
+  metadata:
+    category: deserialization
+
+- id: floor-deser-ruby
+  languages: [ruby]
+  message: "不安全反序列化（Marshal.load/YAML.load/Oj.load）"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: Marshal.load($X)
+        - pattern: YAML.load($X)
+        - pattern: Oj.load($X)
+  metadata:
+    category: deserialization
+
+# ---------- SQL 注入补面（拼接型）----------
+- id: floor-sqli-concat-go
+  languages: [go]
+  message: "SQL 字符串拼接（Sprintf/concat→Query/Exec），SQL 注入面"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: |
+            $DB.Query(fmt.Sprintf(..., $X, ...), ...)
+        - pattern: |
+            $DB.Exec(fmt.Sprintf(..., $X, ...), ...)
+        - pattern: |
+            $Q := "..." + $X + "..."
+  metadata:
+    category: sqli
+    note: "$Q 需流向 Query/Exec 确认"
+
+- id: floor-sqli-ruby
+  languages: [ruby]
+  message: "SQL 拼接（find_by_sql/where 字符串插值/execute）"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: "ActiveRecord::Base.connection.execute($X)"
+        - pattern: $M.find_by_sql($X)
+        # 字符串插值里的 `...` 不是合法的 Ruby 模式（OpenGrep 直接拒绝整条规则），
+        # 用原文正则守住同一语义：只命中含 `#{` 的 where 字面量。
+        - pattern-regex: '\bwhere\(\s*"[^"]*#\{'
+  metadata:
+    category: sqli
+
+# ---------- 服务端请求走私/上传 ----------
+- id: floor-fileupload-node
+  languages: [javascript, typescript]
+  message: "文件上传未约束（multer/express-fileupload/ formidable）"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: "multer({ ..., dest: $X, ... })"
+        - pattern: express-fileupload()
+        - pattern: formidable({ ... })
+  metadata:
+    category: file-upload
+    note: "核类型白名单/大小限制/落盘路径净化"
+
+# ---------- 原型污染 ----------
+- id: floor-prototype-pollution
+  languages: [javascript, typescript]
+  message: "对象合并/赋值未过滤 __proto__（lodash merge/extend/递归赋值），原型污染面"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: _.merge($A, $B)
+        - pattern: _.defaultsDeep($A, $B)
+        - pattern: Object.assign($A, $B)
+        - pattern: $.extend(true, $A, $B)
+  metadata:
+    category: prototype-pollution
+
+- id: floor-deser-python
+  languages: [python]
+  message: "不安全反序列化（pickle/marshal/yaml.load/jsonpickle）"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: pickle.loads($X, ...)
+        - pattern: pickle.load($X, ...)
+        - pattern: _pickle.loads($X, ...)
+        - pattern: marshal.loads($X, ...)
+        - pattern: yaml.load($X)
+        - pattern: jsonpickle.decode($X)
+  metadata:
+    category: deser
+
+- id: floor-deser-java
+  languages: [java, kotlin]
+  message: "不安全反序列化（ObjectInputStream/XMLDecoder/Jackson 多态）"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: new ObjectInputStream($X)
+        - pattern: $O.readObject(...)
+        - pattern: new XMLDecoder($X)
+        - pattern: $M.enableDefaultTyping(...)
+        - pattern: $M.activateDefaultTyping(...)
+        - pattern: new XStream().fromXML($X)
+  metadata:
+    category: deser
+
+- id: floor-sqli-concat-python
+  languages: [python]
+  message: "SQL 拼接直入 execute/executemany（字符串拼接/format/f-string）"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: $C.execute("..." + $X + "...", ...)
+        - pattern: $C.execute("...".format(...), ...)
+        - pattern: $C.execute(f"...{...}...", ...)
+        - pattern: $C.executescript("..." + $X + "...", ...)
+        - pattern: $Q = "..." + $X + "..."
+  metadata:
+    category: sqli
+    note: "$Q 赋值型需确认流向 execute"
+
+- id: floor-sqli-concat-java
+  languages: [java, kotlin]
+  message: "SQL 拼接直入 executeQuery/execute（字符串拼接/String.format）"
+  severity: ERROR
+  patterns:
+    - pattern-either:
+        - pattern: $S.executeQuery("..." + $X + "...")
+        - pattern: $S.execute("..." + $X + "...")
+        - pattern: $S.executeUpdate("..." + $X + "...")
+        - pattern: $S.executeQuery(String.format(..., $X, ...))
+  metadata:
+    category: sqli
+
+# 补路由无鉴权（flask 装饰器 / express 路由）
+- id: floor-route-no-auth-flask
+  languages: [python]
+  message: "Flask 路由无鉴权装饰器（admin/export 类敏感路由尤甚）"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            @$APP.get($ROUTE, ...)
+            def $F(...):
+              ...
+        - pattern: |
+            @$APP.get($ROUTE)
+            def $F(...):
+              ...
+        - pattern: |
+            @$APP.route($ROUTE, ...)
+            def $F(...):
+              ...
+        - pattern: |
+            @$APP.route($ROUTE)
+            def $F(...):
+              ...
+        - pattern: |
+            @$APP.post($ROUTE, ...)
+            def $F(...):
+              ...
+        - pattern: |
+            @$APP.post($ROUTE)
+            def $F(...):
+              ...
+  metadata:
+    category: auth
+    note: "需对照 before_request/装饰器链确认（下限语义：先报后裁）"
+
+- id: floor-route-no-auth-express
+  languages: [javascript, typescript]
+  message: "Express 路由处理器无鉴权包装"
+  severity: WARNING
+  patterns:
+    - pattern-either:
+        - pattern: |
+            $APP.$M($ROUTE, ($REQ, $RES) => { ... })
+        - pattern: |
+            $APP.$M($ROUTE, function ($REQ, $RES) { ... })
+        - pattern: |
+            $APP.$M($ROUTE, async ($REQ, $RES) => { ... })
+  metadata:
+    category: auth
+    note: "需对照中间件顺序确认（下限语义：先报后裁）"
+
+# 补硬编码凭据（const/命名信号）
+- id: floor-const-credential
+  languages: [go, java, python, javascript, typescript]
+  message: "常量名含凭据语义且值为字符串字面量（硬编码凭据）"
+  severity: WARNING
+  patterns:
+    - pattern-regex: (?i)(const|let|var|final|static)?\s*\w*(token|secret|password|passwd|api_?key|private_?key|credential)\w*\s*[:=]\s*["'][A-Za-z0-9+/\-_]{12,}["']
+  metadata:
+    category: hardcoded

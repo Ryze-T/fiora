@@ -1,0 +1,10 @@
+{
+  "name": "tls-insecure-go",
+  "description": "Go TLS verification disabled (CVE-2022-24439 \u7c7b)",
+  "expected": [
+    {
+      "file": "client.go",
+      "category": "tls"
+    }
+  ]
+}
