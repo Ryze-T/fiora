@@ -74,10 +74,15 @@ pub fn contract_repair_prompt(original_task: &str, violation: &str, bad: &str) -
 
 /// 狩猎规划（plan/execute 分离）：一次会话产出全仓假设清单——
 /// 执行会话按假设分工，广度可控、深度可并行、假设可复用。
-pub fn hunt_plan_prompt(tech: &[String], surface_summary: &str, uncovered: &[String]) -> String {
+pub fn hunt_plan_prompt(
+    tech: &[String],
+    surface_summary: &str,
+    uncovered: &[String],
+    hunt_memo: Option<&str>,
+) -> String {
     format!(
         include_str!("../assets/prompts/hunt-plan.md"),
-        highlights = tech_highlights(tech),
+        highlights = with_memo(tech_highlights(tech), hunt_memo),
         surface = if surface_summary.trim().is_empty() {
             "(none provided — hypothesize from the file list)"
         } else {
@@ -93,6 +98,14 @@ pub fn hunt_plan_prompt(tech: &[String], surface_summary: &str, uncovered: &[Str
 
 /// Per-tech threat highlights (DESIGN.md §5): injected when the tech stack is
 /// detected. This is the distilled framework trap knowledge.
+/// 把模型画像块接到 highlights 尾部（无画像 = 原样）。
+pub fn with_memo(base: String, hunt_memo: Option<&str>) -> String {
+    match hunt_memo {
+        Some(m) if !m.trim().is_empty() => format!("{base}\n{m}\n"),
+        _ => base,
+    }
+}
+
 pub fn tech_highlights(tags: &[String]) -> String {
     let mut out = String::new();
     let add = |out: &mut String, title: &str, body: &str| {
@@ -157,26 +170,6 @@ pub fn tech_highlights(tags: &[String]) -> String {
                 "- @RequestMapping without auth annotation = public endpoint (class-level annotations are easy to forget)\n\
                  - SpEL injection in @Value; mass assignment via @RequestBody binding\n\
                  - actuator endpoints exposure"),
-            // ---- 项目画像族（profile:*）：按项目类型自动带出的狩猎重点 ----
-            "profile:k8s-controller" => add(&mut out, "【画像】K8s 控制器/Operator",
-                "- 优先族：RBAC 最小权限、admission 校验完整性、对象键/签名伪造、多租户隔离\n\
-                 - CRD spec 字段直驱 client 构造/网络/凭据消费 = 集群冒充与 SSRF\n\
-                 - 传播策略/模板字段低权可控 = 横向扩散；reconcile 循环的信任边界"),
-            "profile:web-service" => add(&mut out, "【画像】Web 服务",
-                "- 优先族：鉴权边界（中间件顺序/未保护路由）、注入、会话/租户隔离\n\
-                 - 上传/反序列化/SSRF 面；错误响应信息泄露；CORS/cookie 安全"),
-            "profile:cli-tool" => add(&mut out, "【画像】CLI 工具",
-                "- 优先族：参数注入（shell 拼接）、配置文件信任（路径穿越/任意加载）、
-                  插件/扩展加载（代码执行面）、自动更新/下载校验缺失"),
-            "profile:ml-pipeline" => add(&mut out, "【画像】ML 管线",
-                "- 优先族：模型/权重加载（pickle 反序列化 → RCE）、数据集信任（eval/加载即执行）、
-                  模型供应链（trust_remote_code）、推理服务管理面（权重热更/未鉴权接口）"),
-            "profile:iac" => add(&mut out, "【画像】IaC/基础设施",
-                "- 优先族：提权配置（privileged/hostPath/admin）、密钥硬编码、
-                  网络暴露面（0.0.0.0/公网 LB）、状态文件中的凭据"),
-            "profile:library" => add(&mut out, "【画像】库/SDK",
-                "- 优先族：API 信任边界（调用方误用即漏洞的危险 API）、反序列化入口、
-                  默认配置安全性、回调/hook 的执行面"),
             _ => {}
         }
     }
@@ -190,6 +183,7 @@ pub fn judge_prompt(
     tech_tags: &[String],
     batch_context: &str,
     severity_scope: &str,
+    hunt_memo: Option<&str>,
 ) -> String {
     // 严重度范围是唯一的资源调节阀（深度永远全量）：
     //   high —— 高危及以上全契约（impact/preconditions/repro/证据链），其余精简一行
@@ -201,7 +195,7 @@ pub fn judge_prompt(
     };
     format!(
         include_str!("../assets/prompts/judge.md"),
-        highlights = tech_highlights(tech_tags),
+        highlights = with_memo(tech_highlights(tech_tags), hunt_memo),
         info_md = if info_md.trim().is_empty() {
             "(none)"
         } else {
@@ -272,23 +266,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn profile_tags_pull_threat_families() {
-        // 项目画像自动适配：profile 标签 → 对应威胁族进 highlights。
-        let tags = vec!["profile:k8s-controller".to_string()];
+    fn framework_tags_still_pull_their_playbooks() {
+        // 画像改由模型提取后，框架级（依赖识别）playbook 仍是确定性下限。
+        let tags = vec!["express".to_string()];
         let h = tech_highlights(&tags);
-        assert!(h.contains("K8s 控制器"), "画像族应带出：{h}");
-        assert!(h.contains("RBAC"));
-        let tags = vec!["profile:ml-pipeline".to_string()];
-        assert!(tech_highlights(&tags).contains("ML 管线"));
+        assert!(h.contains("Node frameworks"), "{h}");
+        let tags = vec!["spring".to_string()];
+        assert!(tech_highlights(&tags).contains("JVM frameworks"));
     }
 
     #[test]
-    fn tech_and_profile_highlights_coexist() {
-        let tags = vec!["express".to_string(), "profile:web-service".to_string()];
-        let h = tech_highlights(&tags);
-        assert!(
-            h.contains("Node frameworks") && h.contains("【画像】Web 服务"),
-            "{h}"
-        );
+    fn hunt_memo_is_appended_to_highlights() {
+        let memo = "### 项目画像与狩猎重点（模型提取 · 仅注意力引导，不作证据）\n- 狩猎优先级：\n  1. 权重热更接口 —— 管理面未鉴权";
+        let s = with_memo(tech_highlights(&[]), Some(memo));
+        assert!(s.contains("项目画像与狩猎重点"));
+        assert!(s.contains("权重热更接口"));
+        // 无画像 = 原样
+        assert_eq!(with_memo("x".into(), None), "x");
     }
 }

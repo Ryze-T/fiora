@@ -124,8 +124,6 @@ pub fn detect(root: &Path) -> TechReport {
         }
     }
 
-    // 项目画像标签并入（profile:*）：tech_highlights 按画像带出威胁族。
-    tags.extend(crate::profile::detect_profile_tags(root));
     tags.dedup();
     TechReport { tags }
 }

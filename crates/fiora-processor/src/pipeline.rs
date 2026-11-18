@@ -101,6 +101,8 @@ pub struct RunContext<'a> {
     pub prompts_dir: Option<&'a Path>,
     pub tech_tags: &'a [String],
     pub info_md: &'a str,
+    /// 模型画像注入块（`.fiora/profile.json` 渲染）：狩猎注意力引导，不作证据。
+    pub hunt_memo: Option<&'a str>,
 }
 
 pub fn process_pending(
@@ -613,7 +615,13 @@ fn judge_batch(
     let prompt = load_or_default(
         prompts_dir,
         "judge",
-        &judge_prompt(info_md, tech_tags, &batch_context, &cfg.severity_scope),
+        &judge_prompt(
+            info_md,
+            tech_tags,
+            &batch_context,
+            &cfg.severity_scope,
+            ctx.hunt_memo,
+        ),
     );
     let mut agent = agent_prov(
         run_id,

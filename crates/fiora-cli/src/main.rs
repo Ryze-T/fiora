@@ -242,6 +242,17 @@ enum Cmd {
         #[arg(long)]
         json: bool,
     },
+    /// 项目画像：模型提取画像 + 历史 CVE 模式 + 狩猎重点（区别于 --profile 模型档位）
+    Profile {
+        #[arg(long, default_value = ".")]
+        root: PathBuf,
+        /// 判定同款模型（缺省用 config.json 默认模型）
+        #[arg(long)]
+        model: Option<String>,
+        /// 已有画像时强制重提
+        #[arg(long)]
+        refresh: bool,
+    },
     /// 账本状态快照（文件/发现/链/验证覆盖率）
     Status {
         #[arg(long, default_value = ".")]
@@ -497,6 +508,11 @@ fn main() {
             }
             RulesCmd::Validate { file } => commands::rules::cmd_rules_validate(file.as_deref()),
         },
+        Cmd::Profile {
+            root,
+            model,
+            refresh,
+        } => commands::agent::cmd_profile(&root, model, refresh),
         Cmd::Status { root } => commands::status::cmd_status(&root),
         Cmd::Family {
             root,

@@ -9,7 +9,7 @@ crates/
 ├── fiora-core       L0 状态核心：三实体账本（FileRecord/Finding/Chain）+ Evidence
 │                    AuditMeta（阶段/模型溯源）· TTL 租约调度 · 成本记账 · ProjectConfig · util
 ├── fiora-scanner    L1 候选生成：OpenGrep 桥 · Fiora Rules（三级规则库）· 规则起草通道
-│                    技术栈/项目画像检测 · Surface Inventory（覆盖率分母）
+│                    技术栈检测 · Surface Inventory（覆盖率分母）
 ├── fiora-evidence   L2 证据协议：预装配骨架 · 三者齐备（sink×source×entry）· 诚实分级
 ├── fiora-processor  L3 判定大脑：pi 驱动 · 三段式（triage/judge/revalidate）
 │                    verdict 契约 · 机械核查（五族语义降级 + CVE 消歧）· 链式引擎 · 语义探索

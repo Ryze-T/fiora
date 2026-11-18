@@ -53,6 +53,7 @@ cargo build --release && export PATH="$PWD/target/release:$PATH"
 | 验证补丁是否修复（确定性差分） | `fiora verify diff --root <repo> --finding <id>`（pre/post 修订 shape 对照） |
 | **回填验证结论**（Agent 验证后） | `fiora verify record --finding <id> --level live-prove\|trigger-prove\|code-proof\|disproved [--note ...]` |
 | 生成复现材料起点 | `fiora lab scaffold --finding <id> [--lang python\|java\|go\|node]` |
+| 项目画像（狩猎重点） | `fiora profile --root <repo>`（run 自动跑；`--refresh` 重提）|
 | 环境体检 | `fiora doctor --root <repo>` |
 | 规则库管理 | `fiora rules list` / `fiora rules add <file-or-dir> [--project]` |
 | 按盲区起草规则（人工复核后入库） | `fiora draft-rules --root <repo> --model <id>` → `.fiora/rules-draft/draft.yaml` → `fiora rules add … --project` |

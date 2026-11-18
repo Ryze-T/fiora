@@ -43,6 +43,17 @@ pub(crate) fn cmd_run(
         super::report::cmd_report_with(root, None, severity, None, None, true)?;
         return Ok(());
     }
+    // L2 项目画像（Agent Native）：模型读仓库提取画像 + 历史 CVE 模式 + 狩猎优先级，
+    // 落账后供判定/探索/组合三个会话复用；已存在则沿用（--refresh 重提）。
+    let base = root.join(".fiora");
+    if !base.join("profile.json").exists() {
+        match super::agent::cmd_profile(root, model.clone(), false) {
+            Ok(()) => {}
+            Err(e) => println!("profile: 画像提取失败（{e}），继续无画像跑"),
+        }
+    } else {
+        println!("profile: 沿用既有 .fiora/profile.json（fiora profile --refresh 重提）");
+    }
     // L2 语义探索通道：规则面之外的 AI 自挖（预算自动，深度由 --depth 控制）
     match explore_budget {
         Some(0) => {}
@@ -263,6 +274,7 @@ pub(crate) fn cmd_process(
         .and_then(|t| serde_json::from_str(&t).ok())
         .unwrap_or_default();
     let info_md = fiora_processor::load_info_md(&root);
+    let hunt_memo = crate::support::hunt_memo(&base);
     let prompts_dir = dirs_fiora().join("prompts");
 
     let cfg = fiora_processor::ProcessConfig {
@@ -292,6 +304,7 @@ pub(crate) fn cmd_process(
             prompts_dir: Some(&prompts_dir),
             tech_tags: &tech,
             info_md: &info_md,
+            hunt_memo: hunt_memo.as_deref(),
         },
         &cfg,
     )

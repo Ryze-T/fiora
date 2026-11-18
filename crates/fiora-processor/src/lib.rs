@@ -20,10 +20,12 @@ pub use chain::{compose_chains, persist_chains};
 pub use compose::{
     build_inventory, compose_prompt, compose_verify_prompt, parse_compositions, Observation,
 };
+pub mod profiling;
 pub use pi::{parse_event_stream, PiError, PiOutcome, PiRequest, PiRunner, ThinkingLevel};
 pub use pipeline::{
     load_info_md, process_pending, PipelineError, ProcessConfig, ProcessSummary, RunContext,
 };
+pub use profiling::{parse_proj_profile, render_hunt_memo, run_proj_profile, ProjProfile};
 pub use prompts::{json_repair_prompt, load_or_default, SEMANTIC_EXPLORE_BUILTIN};
 pub use semantic::{
     parse_findings, parse_plan, ExploreBudget, HuntHypothesis, SemanticChannel, SemanticFinding,

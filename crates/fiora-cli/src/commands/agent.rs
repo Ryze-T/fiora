@@ -55,6 +55,7 @@ pub(crate) fn cmd_explore(
         .map(|(rel, _)| rel.clone())
         .filter(|rel| !covered.contains(rel))
         .collect();
+    let hunt_memo = crate::support::hunt_memo(&root.join(".fiora"));
     let user_budget = budget;
     let want_plan = user_budget
         .map(|b| b >= 3)
@@ -111,6 +112,7 @@ pub(crate) fn cmd_explore(
                 &tech_tags,
                 &surface_summary,
                 &uncovered,
+                hunt_memo.as_deref(),
             ),
             model: model.clone(),
             thinking: Some(thinking),
@@ -724,6 +726,47 @@ pub(crate) fn cmd_localize(root: &Path, model: Option<String>) -> Result<(), Str
         },
     )?;
     println!("localize: {updated} finding(s) updated to Chinese");
+    Ok(())
+}
+
+/// `fiora profile` —— 项目画像（Agent Native）：模型读仓库提取画像、历史 CVE
+/// 模式与狩猎优先级，落 `.fiora/profile.json`（可审计），供判定/探索/组合复用。
+///
+/// 与 `--profile`（模型档位）无关：那个是 judge/budget 模型组合，这个是仓库画像。
+pub(crate) fn cmd_profile(root: &Path, model: Option<String>, refresh: bool) -> Result<(), String> {
+    let root = root.canonicalize().map_err(|e| format!("root: {e}"))?;
+    let base = root.join(".fiora");
+    let out_path = base.join("profile.json");
+    if out_path.exists() && !refresh {
+        println!("profile: 已有 {}（--refresh 重提）", out_path.display());
+        return Ok(());
+    }
+    let proj = crate::support::config(&base);
+    let model = model.or_else(|| proj.default_model.clone());
+    let runner = crate::support::model_runner(&base, model.as_deref())?;
+    let info_md = fiora_processor::load_info_md(&root);
+    println!(
+        "profile: 模型提取项目画像（{}）…",
+        model.clone().unwrap_or_else(|| "pi 默认模型".into())
+    );
+    let mut profile = fiora_processor::run_proj_profile(&runner, &root, &info_md, model.clone())
+        .map_err(|e| format!("画像提取失败：{e}"))?;
+    profile.generated_at = fiora_core::util::now_iso();
+    std::fs::create_dir_all(&base).map_err(|e| e.to_string())?;
+    std::fs::write(
+        &out_path,
+        serde_json::to_string_pretty(&profile).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())?;
+    println!("profile: {}", profile.summary);
+    println!("profile: 栈：{}", profile.stack.join(" · "));
+    if !profile.cve_patterns.is_empty() {
+        println!("profile: 历史 CVE 模式 {} 条", profile.cve_patterns.len());
+    }
+    for (i, h) in profile.hunting_priorities.iter().enumerate() {
+        println!("  狩猎优先级 {}: {} —— {}", i + 1, h.focus, h.reason);
+    }
+    println!("profile: 已落账 {}", out_path.display());
     Ok(())
 }
 

@@ -116,6 +116,7 @@ fn pipeline_end_to_end_judge_and_revalidate_flip() {
             prompts_dir: None,
             tech_tags: &["gin".to_string()],
             info_md: "demo service",
+            hunt_memo: None,
         },
         &cfg,
     )
@@ -307,6 +308,7 @@ fn parallel_workers_process_every_file_exactly_once() {
             prompts_dir: None,
             tech_tags: &[],
             info_md: "",
+            hunt_memo: None,
         },
         &cfg,
     )
@@ -705,6 +707,7 @@ print("\n".join(json.dumps(e) for e in events))
             prompts_dir: None,
             tech_tags: &["gin".to_string()],
             info_md: "demo service",
+            hunt_memo: None,
         },
         &ProcessConfig {
             batch_files: 5,

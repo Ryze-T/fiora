@@ -224,3 +224,11 @@ pub(crate) fn detect_docker() -> EnvCap {
         },
     }
 }
+
+/// 模型画像注入块（`.fiora/profile.json` → 渲染）。缺文件/坏文件 = 无画像，
+/// 各会话照常跑（画像只是注意力引导）。
+pub(crate) fn hunt_memo(base: &Path) -> Option<String> {
+    let text = std::fs::read_to_string(base.join("profile.json")).ok()?;
+    let profile: fiora_processor::ProjProfile = serde_json::from_str(&text).ok()?;
+    Some(fiora_processor::render_hunt_memo(&profile))
+}

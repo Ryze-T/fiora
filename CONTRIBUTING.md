@@ -7,7 +7,7 @@
 ```bash
 git clone <repo> && cd fiora
 cargo build
-cargo test                      # 160 测试
+cargo test                      # 158 测试
 cargo clippy --all-targets -- -D warnings   # 0 警告门禁
 cargo fmt --check               # 格式门禁
 ```

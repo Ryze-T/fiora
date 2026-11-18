@@ -2,7 +2,7 @@
 
 **证据挂载式 AI 代码审计 Harness**。工具负责查全，AI 负责判准。
 
-[![tests](https://img.shields.io/badge/tests-160-green)](#开发) [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![report](https://img.shields.io/badge/report-single--file%20HTML-orange)](#报告长什么样)
+[![tests](https://img.shields.io/badge/tests-158-green)](#开发) [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![report](https://img.shields.io/badge/report-single--file%20HTML-orange)](#报告长什么样)
 
 单二进制 CLI。规则扫描 + AI 深度判定 + 证据链 + 漏洞链，产出一份**可直接交付的单文件审计报告**（RCE 攻击面置顶、发现↔PoC 双向跳转、自动统计）。
 
@@ -72,6 +72,7 @@ open fiora-report/report.html
 | 能力族座次 | `fiora family` | RCE/SSRF/AWF 族聚合 + 可达性档位排序（回答"还有哪些/哪些无条件"）|
 | 复现材料起点 | `fiora lab scaffold` | 实验室脚手架（真代码+桩化+canary+正控），Agent 适配后执行 |
 | **多模型档位** | `fiora models` / `--profile` | 模型池 + 运行档位：配置多个模型，跑时一键切组合 |
+| **项目画像** | `fiora profile` | 模型读仓库提取画像 + 历史 CVE 模式 + 狩猎重点（Agent Native，注入判定/探索）|
 | 评测回归 | `fiora eval` | recall / precision / 每真洞成本，改动必须不掉分 |
 | 规则资产 | `fiora rules` | 三级规则库（builtin < 用户 < 项目），Semgrep YAML，改数据不重编译 |
 | 报告精修 | `fiora enrich / refine / localize` | 补影响+PoC / 短句精炼 / 中文化 |
@@ -94,7 +95,7 @@ crate 划分：`fiora-cli`（编排）/ `fiora-core`（账本·调度·凭据）
 ## 开发
 
 ```bash
-cargo test          # 160 测试（含报告模板契约测试）
+cargo test          # 158 测试（含报告模板契约测试）
 cargo clippy --all-targets   # 0 告警门禁
 fiora eval --corpus corpus --rule-only   # 下限门禁：规则通道 recall 100%（零模型，可进 CI）
 # 全链基线（双冷跑）见 CHANGELOG [0.2.0]：recall 36/36、precision 86%，改动不得低于基线

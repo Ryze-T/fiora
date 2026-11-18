@@ -116,7 +116,7 @@ fiora run [--root <DIR>] [--model <ID>] [--thinking <LEVEL>] [--workers <N>] [--
 | `--workers` | `1` | 并行判定 worker 数（批次级并行，经 TTL 租约认领） |
 | `--no-ai` | 关 | 只跑免费阶段（scan + evidence + report），不调模型；交付零模型报告，provenance 会写明未判定 |
 | `--severity` | `high` | 书写阀（不是判定阀）：high=仅高危及以上写全契约（impact/PoC/前置），中低危只留最小字段省 token；**每条候选都会拿到判定结论**，报告展示范围跟随此参数 |
-| `--explore <N>` | auto | 语义探索会话预算：auto=按未覆盖文件全量覆盖（大仓库会是数百上千个模型会话，启动时会先报数）；`--explore 0` 跳过探索只走规则通道 |
+| `--explore <N>` | auto | 语义探索会话预算（此前自动跑项目画像，见 `fiora profile`）：auto=按未覆盖文件全量覆盖（大仓库会是数百上千个模型会话，启动时会先报数）；`--explore 0` 跳过探索只走规则通道 |
 
 ### `fiora scan` — L1 规则通道
 
@@ -316,6 +316,21 @@ GitHub Actions 最小接法：
   if: always()
   with: { sarif_file: fiora.sarif }
 ```
+
+### `fiora profile` — 项目画像（模型提取）
+
+```
+fiora profile [--root <DIR>] [--model <ID>] [--refresh]
+```
+
+模型自己读仓库（工具会话）提取：项目画像 / 技术栈 / 入口面 / 信任边界 /
+**历史 CVE 模式**（编号只写确信存在的，无据不编）/ **狩猎优先级**（结合本仓
+结构的主动推理），落 `.fiora/profile.json`（可审计），注入判定、探索计划、
+组合狩猎三个会话做注意力引导。`fiora run` 自动执行（已存在则沿用，`--refresh`
+重提）。模型不可用时自动跳过，流水线照常。
+
+> 注意与 `--profile <档位>` 区分：那个是 judge/budget **模型组合档位**（见下节），
+> 这个是**仓库画像**。
 
 ### `fiora status` — 账本状态
 

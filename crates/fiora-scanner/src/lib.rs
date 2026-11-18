@@ -13,13 +13,11 @@
 
 pub mod normalize;
 pub mod opengrep;
-pub mod profile;
 pub mod rules;
 pub mod surface;
 pub mod tech;
 
 pub use normalize::{normalize, parse_json, OpgrepReport};
-pub use profile::detect_profile_tags;
 pub use rules::{sync_builtin_copies, BuiltinSync, LoadedRule, RuleRegistry, RuleSource};
 pub use surface::{enumerate as enumerate_surface, EntryKind, SurfaceEntry};
 pub use tech::{detect as detect_tech, TechReport};
