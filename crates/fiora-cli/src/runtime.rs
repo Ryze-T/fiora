@@ -263,7 +263,7 @@ fn install_opengrep(rt: &Path) -> String {
         eprintln!("opengrep: 告警：{note}");
     }
     format!(
-        "opengrep: download failed — 重试一次 `fiora doctor`（下载可能瞬时失败）；仍失败则手动放置二进制到 {} 或设置 FIORA_OPENGREP_BIN",
+        "opengrep: download failed — 重跑一次 `fiora init`（幂等自愈，下载可能瞬时失败）；仍失败则手动放置二进制到 {} 或设置 FIORA_OPENGREP_BIN",
         rt.join("opengrep").display()
     )
 }

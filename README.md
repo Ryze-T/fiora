@@ -28,16 +28,33 @@
 
 **前提**：Node.js ≥22.19（唯一系统依赖，内嵌 Agent 运行时 pi 的硬性要求；`fiora init` 会自动拉取其余运行时）。
 
+### ① 安装二进制（静态链接，解压即用）
+
 ```bash
-# ① 预编译二进制（推荐：静态链接，解压即用；四平台见 Releases 页）
 curl -fsSL https://github.com/Ryze-T/fiora/releases/latest/download/fiora-macos-arm64.tar.gz | tar xz
 export PATH="$PWD/fiora-macos-arm64:$PATH"   # linux-x64 / linux-arm64 / macos-x64 同理
+# 或从源码：cargo build --release && export PATH="$PWD/target/release:$PATH"
+# 私有 fork/镜像分发需鉴权下载，用法见 docs/USAGE.md「安装」
+```
 
-# 私有 fork/镜像分发时下载要鉴权，用法见 docs/USAGE.md「安装」
+### ② 首选：交给工作台 Agent 跑
 
-# ② 或从源码构建
-cargo build --release && export PATH="$PWD/target/release:$PATH"
+fiora 是 **Agent 工作台背后的审计引擎**。把 [SKILL.md](SKILL.md) 交给你的
+coding agent（pi 等），说一句「审计这个仓库」，其余它自己完成：
 
+```
+fiora init → fiora run（扫描 + 判定 + 报告）
+→ 审报告，按 verificationChecklist 起 docker 环境验真值（canary 无害化）
+→ fiora verify record 回填（live-prove / trigger-prove / code-proof / disproved）
+→ 交付报告 + 验证徽章 + 验证终表
+```
+
+SKILL.md 双章（调用章 + 验证章）是给 Agent 的行为契约：怎么调、怎么验、
+验证纪律（canary 无害化 / 正控往返 / 即用即毁 / 不夸大）都在里面。
+
+### ③ 或者：纯 CLI（无 Agent）
+
+```bash
 cd <你的仓库>
 fiora init --model openai/gpt-5.5 --api-key sk-xxx
 fiora run            # 深度永远全量；--severity high|all 调严重度范围（默认 high）
@@ -107,8 +124,8 @@ fiora eval --corpus corpus --rule-only   # 下限门禁：规则通道 recall 10
 
 | 模式 | 适用 | 体验 |
 |---|---|---|
+| **Agent 工作台**（首选） | 完整审计交付、环境验证、攻防演练、组合链验尸 | 读 SKILL.md 全自动：审计 + 起环境验真值 + 回填徽章 |
 | **纯 CLI**（无 Agent） | 日常审计、CI 门禁、批量扫描 | `fiora run` 全自动出报告，扫描/判定/报告完整可用 |
-| **Agent 工作台**（推荐完整体验） | 环境验证、攻防演练、组合链验尸、定制报告 | Agent 审报告 + 起环境验真值 + 回填结论（SKILL.md 验证章）|
 
 ## 已知边界（诚实声明）
 

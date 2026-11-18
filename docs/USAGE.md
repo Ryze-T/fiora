@@ -35,6 +35,9 @@ Options:
 
 ---
 
+> **推荐入口是工作台 Agent**：把 [SKILL.md](../SKILL.md) 交给 coding agent（pi 等），
+> 由它按调用章/验证章驱动下面这些命令。本文是命令全集参考，两条路线共用同一批 CLI。
+
 ## 快速开始
 
 ```bash
