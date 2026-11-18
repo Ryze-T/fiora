@@ -14,8 +14,9 @@ fiora 审计阶段的行为契约见 [SKILL.md](../SKILL.md)。
   `base_url` + 协议（`openai-completions` / `anthropic-messages` 等）；
 - key 只在第 3 步注入凭据库，不写入任何项目文件、聊天记录或日志。
 
-**1. 安装二进制**（按平台选包：`fiora-linux-x64` / `fiora-linux-arm64` /
-`fiora-macos-x64` / `fiora-macos-arm64`）
+**1. 安装二进制**（先预检：`fiora --version` 有输出就**跳过本步**，不要重复下载）
+（按平台选包：`fiora-linux-x64` / `fiora-linux-arm64` / `fiora-macos-x64` /
+`fiora-macos-arm64`）
 
 ```bash
 curl -fsSL https://github.com/Ryze-T/fiora/releases/latest/download/<平台包>.tar.gz | tar xz
@@ -48,13 +49,20 @@ credentials 六项必需项必须全 ✓ 才算配好。
 - opengrep ✗ 且提示下载失败 → 重跑 `fiora init`（幂等自愈）；
 - docker ✗ → 正常，只是「主动验证」关闭，不装。
 
-**5. 冒烟**（三件都要真跑）
+**5. 冒烟**（三件都要真跑，用**自建迷你仓**，不拿目标大仓当试验田——
+扫描耗时随仓库体量涨，装机验收必须是秒级到分钟级的固定成本）
 
 ```bash
-fiora scan --root <目标仓库>      # 规则通道出候选
-fiora profile --root <目标仓库>   # 模型链路打通（画像落账，--refresh 可重提）
-fiora status --root <目标仓库>    # 账本正常
+mkdir -p /tmp/fiora-smoke
+printf 'import os\ndef r(q):\n    return os.popen(q).read()\n' > /tmp/fiora-smoke/app.py
+fiora scan --root /tmp/fiora-smoke      # 规则通道出候选（秒级）
+fiora profile --root /tmp/fiora-smoke   # 模型链路打通（一次小模型调用）
+fiora status --root /tmp/fiora-smoke    # 账本正常
+rm -rf /tmp/fiora-smoke                 # 即用即毁
 ```
+
+真实仓库只做第 3 步的 `fiora init`（配置落位，不随仓库体量变慢）；
+全量扫描属于审计阶段（`fiora run` / SKILL.md），不是装机验收的一部分。
 
 **6. 交付配置终表**：组件（fiora / node / pi / opengrep / 规则条数 / 模型 /
 docker 能力项）× 版本路径状态，附 `fiora doctor` 原文，以及下一步指引：

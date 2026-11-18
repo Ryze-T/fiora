@@ -39,19 +39,11 @@ fiora 是 **Agent 工作台背后的审计引擎**：工具管确定性扫描，
 前提：Node.js ≥ 22.19（唯一系统依赖，内嵌 Agent 运行时 pi 的硬性要求）。
 init 自动拉取其余运行时（pi + OpenGrep，后者带 SHA-256 校验）。
 
-### ① 安装二进制（静态链接，解压即用）
+### ① 首选：交给工作台 Agent 跑
 
-```bash
-curl -fsSL https://github.com/Ryze-T/fiora/releases/latest/download/fiora-macos-arm64.tar.gz | tar xz
-export PATH="$PWD/fiora-macos-arm64:$PATH"   # linux-x64 / linux-arm64 / macos-x64 同理
-# 或从源码：cargo build --release && export PATH="$PWD/target/release:$PATH"
-# 私有 fork/镜像分发需鉴权下载，用法见 docs/USAGE.md「安装」
-```
-
-### ② 首选：交给工作台 Agent 跑
-
-把 [SKILL.md](SKILL.md) 交给你的 coding agent（pi 等），说一句「审计这个仓库」，
-其余它自己完成：
+**没配置好就把 [docs/SETUP.md](docs/SETUP.md) 的配置 prompt 交给 Agent**：从装
+二进制到配模型一把到位（幂等，已装则跳过，不会重复下载）。配好后把
+[SKILL.md](SKILL.md) 交给它，说一句「审计这个仓库」，其余它自己完成：
 
 ```
 fiora init → fiora run（扫描 + 判定 + 报告）
@@ -60,12 +52,17 @@ fiora init → fiora run（扫描 + 判定 + 报告）
 → 交付报告 + 验证徽章 + 验证终表
 ```
 
-SKILL.md 双章（调用章 + 验证章）是给 Agent 的行为契约。系统还没装好？
-把 [docs/SETUP.md](docs/SETUP.md) 的配置 prompt 交给 Agent 先装好。
+SKILL.md 双章（调用章 + 验证章）是给 Agent 的行为契约。
 
-### ③ 或者：纯 CLI（无 Agent）
+### ② 或者：手动安装 + 纯 CLI（无 Agent）
 
 ```bash
+# 安装二进制（静态链接，解压即用；四平台见 Releases 页）
+curl -fsSL https://github.com/Ryze-T/fiora/releases/latest/download/fiora-macos-arm64.tar.gz | tar xz
+export PATH="$PWD/fiora-macos-arm64:$PATH"   # linux-x64 / linux-arm64 / macos-x64 同理
+# 或从源码：cargo build --release && export PATH="$PWD/target/release:$PATH"
+# 私有 fork/镜像分发需鉴权下载，用法见 docs/USAGE.md「安装」
+
 cd <你的仓库>
 fiora init --model openai/gpt-5.5 --api-key sk-xxx
 fiora run            # 深度永远全量；--severity high|all 调范围（默认 high）
